@@ -5,7 +5,6 @@ package main
 
 import (
 	"github.com/goforj/env"
-	"github.com/goforj/godump"
 	"os"
 )
 
@@ -15,14 +14,14 @@ func main() {
 	// Example: numeric truthy
 	_ = os.Setenv("DEBUG", "1")
 	debug := env.GetBool("DEBUG", "false")
-	godump.Dump(debug)
+	env.Dump(debug)
 
 	// #bool true
 
 	// Example: fallback string
 	os.Unsetenv("DEBUG")
 	debug = env.GetBool("DEBUG", "false")
-	godump.Dump(debug)
+	env.Dump(debug)
 
 	// #bool false
 }

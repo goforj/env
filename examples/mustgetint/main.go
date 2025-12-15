@@ -5,7 +5,6 @@ package main
 
 import (
 	"github.com/goforj/env"
-	"github.com/goforj/godump"
 	"os"
 )
 
@@ -15,7 +14,7 @@ func main() {
 	// Example: ensure numeric port
 	_ = os.Setenv("PORT", "8080")
 	port := env.MustGetInt("PORT")
-	godump.Dump(port)
+	env.Dump(port)
 
 	// #int 8080
 

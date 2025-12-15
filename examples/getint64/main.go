@@ -5,7 +5,6 @@ package main
 
 import (
 	"github.com/goforj/env"
-	"github.com/goforj/godump"
 	"os"
 )
 
@@ -15,14 +14,14 @@ func main() {
 	// Example: parse large numbers safely
 	_ = os.Setenv("MAX_SIZE", "1048576")
 	size := env.GetInt64("MAX_SIZE", "512")
-	godump.Dump(size)
+	env.Dump(size)
 
 	// #int64 1048576
 
 	// Example: fallback when unset
 	os.Unsetenv("MAX_SIZE")
 	size = env.GetInt64("MAX_SIZE", "512")
-	godump.Dump(size)
+	env.Dump(size)
 
 	// #int64 512
 }

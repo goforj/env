@@ -3,15 +3,12 @@
 
 package main
 
-import (
-	"github.com/goforj/env"
-	"github.com/goforj/godump"
-)
+import "github.com/goforj/env"
 
 func main() {
 	// IsMac reports whether the runtime OS is macOS (Darwin).
 
-	godump.Dump(env.IsMac())
+	env.Dump(env.IsMac())
 
 	// #bool true  (on macOS)
 	// #bool false (elsewhere)

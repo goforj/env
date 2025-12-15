@@ -3,15 +3,12 @@
 
 package main
 
-import (
-	"github.com/goforj/env"
-	"github.com/goforj/godump"
-)
+import "github.com/goforj/env"
 
 func main() {
 	// IsWindows reports whether the runtime OS is Windows.
 
-	godump.Dump(env.IsWindows())
+	env.Dump(env.IsWindows())
 
 	// #bool true  (on Windows)
 	// #bool false (elsewhere)

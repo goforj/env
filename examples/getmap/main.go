@@ -5,7 +5,6 @@ package main
 
 import (
 	"github.com/goforj/env"
-	"github.com/goforj/godump"
 	"os"
 )
 
@@ -15,7 +14,7 @@ func main() {
 	// Example: parse throttling config
 	_ = os.Setenv("LIMITS", "read=10, write=5, burst=20")
 	limits := env.GetMap("LIMITS", "")
-	godump.Dump(limits)
+	env.Dump(limits)
 
 	// #map[string]string [
 	//  "burst" => "20" #string
@@ -26,7 +25,7 @@ func main() {
 	// Example: returns empty map when unset or blank
 	os.Unsetenv("LIMITS")
 	limits = env.GetMap("LIMITS", "")
-	godump.Dump(limits)
+	env.Dump(limits)
 
 	// #map[string]string []
 }

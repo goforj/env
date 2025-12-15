@@ -3,15 +3,12 @@
 
 package main
 
-import (
-	"github.com/goforj/env"
-	"github.com/goforj/godump"
-)
+import "github.com/goforj/env"
 
 func main() {
 	// IsLinux reports whether the runtime OS is Linux.
 
-	godump.Dump(env.IsLinux())
+	env.Dump(env.IsLinux())
 
 	// #bool true  (on Linux)
 	// #bool false (on other OSes)

@@ -5,7 +5,6 @@ package main
 
 import (
 	"github.com/goforj/env"
-	"github.com/goforj/godump"
 	"os"
 )
 
@@ -14,7 +13,7 @@ func main() {
 
 	// Example: simple retrieval
 	_ = os.Setenv("APP_ENV", "staging")
-	godump.Dump(env.GetAppEnv())
+	env.Dump(env.GetAppEnv())
 
 	// #string "staging"
 }

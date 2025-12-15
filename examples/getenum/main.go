@@ -5,7 +5,6 @@ package main
 
 import (
 	"github.com/goforj/env"
-	"github.com/goforj/godump"
 	"os"
 )
 
@@ -15,14 +14,14 @@ func main() {
 	// Example: accept only staged environments
 	_ = os.Setenv("APP_ENV", "prod")
 	appEnv := env.GetEnum("APP_ENV", "dev", []string{"dev", "staging", "prod"})
-	godump.Dump(appEnv)
+	env.Dump(appEnv)
 
 	// #string "prod"
 
 	// Example: fallback when unset
 	os.Unsetenv("APP_ENV")
 	appEnv = env.GetEnum("APP_ENV", "dev", []string{"dev", "staging", "prod"})
-	godump.Dump(appEnv)
+	env.Dump(appEnv)
 
 	// #string "dev"
 }

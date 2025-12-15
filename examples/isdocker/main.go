@@ -3,16 +3,13 @@
 
 package main
 
-import (
-	"github.com/goforj/env"
-	"github.com/goforj/godump"
-)
+import "github.com/goforj/env"
 
 func main() {
 	// IsDocker reports whether the current process is running in a Docker container.
 
 	// Example: typical host
-	godump.Dump(env.IsDocker())
+	env.Dump(env.IsDocker())
 
 	// #bool false (unless inside Docker)
 }

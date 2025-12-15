@@ -5,7 +5,6 @@ package main
 
 import (
 	"github.com/goforj/env"
-	"github.com/goforj/godump"
 	"os"
 )
 
@@ -15,14 +14,14 @@ func main() {
 	// Example: fallback when unset
 	os.Unsetenv("DB_HOST")
 	host := env.Get("DB_HOST", "localhost")
-	godump.Dump(host)
+	env.Dump(host)
 
 	// #string "localhost"
 
 	// Example: prefer existing value
 	_ = os.Setenv("DB_HOST", "db.internal")
 	host = env.Get("DB_HOST", "localhost")
-	godump.Dump(host)
+	env.Dump(host)
 
 	// #string "db.internal"
 }

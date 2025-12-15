@@ -5,7 +5,6 @@ package main
 
 import (
 	"github.com/goforj/env"
-	"github.com/goforj/godump"
 	"os"
 )
 
@@ -15,14 +14,14 @@ func main() {
 	// Example: defaults to fallback when missing
 	os.Unsetenv("WORKERS")
 	workers := env.GetUint("WORKERS", "4")
-	godump.Dump(workers)
+	env.Dump(workers)
 
 	// #uint 4
 
 	// Example: uses provided unsigned value
 	_ = os.Setenv("WORKERS", "16")
 	workers = env.GetUint("WORKERS", "4")
-	godump.Dump(workers)
+	env.Dump(workers)
 
 	// #uint 16
 }

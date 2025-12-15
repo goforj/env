@@ -5,7 +5,6 @@ package main
 
 import (
 	"github.com/goforj/env"
-	"github.com/goforj/godump"
 	"os"
 	"path/filepath"
 )
@@ -20,14 +19,14 @@ func main() {
 	_ = os.Setenv("APP_ENV", env.Testing)
 
 	_ = env.LoadEnvFileIfExists()
-	godump.Dump(os.Getenv("PORT"))
+	env.Dump(os.Getenv("PORT"))
 
 	// #string "9090"
 
 	// Example: default .env on a host
 	_ = os.WriteFile(".env", []byte("SERVICE=api\nAPP_DEBUG=3"), 0o644)
 	_ = env.LoadEnvFileIfExists()
-	godump.Dump(os.Getenv("SERVICE"))
+	env.Dump(os.Getenv("SERVICE"))
 
 	// #string "api"
 }

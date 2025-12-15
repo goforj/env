@@ -3,16 +3,13 @@
 
 package main
 
-import (
-	"github.com/goforj/env"
-	"github.com/goforj/godump"
-)
+import "github.com/goforj/env"
 
 func main() {
 	// IsContainer detects common container runtimes (Docker, containerd, Kubernetes, Podman).
 
 	// Example: host vs container
-	godump.Dump(env.IsContainer())
+	env.Dump(env.IsContainer())
 
 	// #bool true  (inside most containers)
 	// #bool false (on bare-metal/VM hosts)

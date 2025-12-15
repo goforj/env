@@ -3,15 +3,12 @@
 
 package main
 
-import (
-	"github.com/goforj/env"
-	"github.com/goforj/godump"
-)
+import "github.com/goforj/env"
 
 func main() {
 	// IsKubernetes reports whether the process is running inside Kubernetes.
 
-	godump.Dump(env.IsKubernetes())
+	env.Dump(env.IsKubernetes())
 
 	// #bool true  (inside Kubernetes pods)
 	// #bool false (elsewhere)

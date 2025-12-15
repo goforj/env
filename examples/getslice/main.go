@@ -5,7 +5,6 @@ package main
 
 import (
 	"github.com/goforj/env"
-	"github.com/goforj/godump"
 	"os"
 )
 
@@ -15,7 +14,7 @@ func main() {
 	// Example: trimmed addresses
 	_ = os.Setenv("PEERS", "10.0.0.1, 10.0.0.2")
 	peers := env.GetSlice("PEERS", "")
-	godump.Dump(peers)
+	env.Dump(peers)
 
 	// #[]string [
 	//  0 => "10.0.0.1" #string
@@ -25,7 +24,7 @@ func main() {
 	// Example: empty becomes empty slice
 	os.Unsetenv("PEERS")
 	peers = env.GetSlice("PEERS", "")
-	godump.Dump(peers)
+	env.Dump(peers)
 
 	// #[]string []
 }

@@ -89,6 +89,7 @@ if env.IsAppEnvDev() {
 |------:|-----------|
 | **Application environment** | [GetAppEnv](#getappenv) [IsAppEnv](#isappenv) [IsAppEnvDev](#isappenvdev) [IsAppEnvLocal](#isappenvlocal) [IsAppEnvLocalOrStaging](#isappenvlocalorstaging) [IsAppEnvProduction](#isappenvproduction) [IsAppEnvStaging](#isappenvstaging) [IsAppEnvTesting](#isappenvtesting) [IsAppEnvTestingOrLocal](#isappenvtestingorlocal) |
 | **Container detection** | [IsContainer](#iscontainer) [IsDocker](#isdocker) [IsDockerHost](#isdockerhost) [IsDockerInDocker](#isdockerindocker) [IsHostEnvironment](#ishostenvironment) [IsKubernetes](#iskubernetes) |
+| **Debugging** | [Dump](#dump) |
 | **Environment loading** | [IsEnvLoaded](#isenvloaded) [LoadEnvFileIfExists](#loadenvfileifexists) |
 | **Runtime** | [Arch](#arch) [IsBSD](#isbsd) [IsContainerOS](#iscontaineros) [IsLinux](#islinux) [IsMac](#ismac) [IsUnix](#isunix) [IsWindows](#iswindows) [OS](#os) |
 | **Typed getters** | [Get](#get) [GetBool](#getbool) [GetDuration](#getduration) [GetEnum](#getenum) [GetFloat](#getfloat) [GetInt](#getint) [GetInt64](#getint64) [GetMap](#getmap) [GetSlice](#getslice) [GetUint](#getuint) [GetUint64](#getuint64) [MustGet](#mustget) [MustGetBool](#mustgetbool) [MustGetInt](#mustgetint) |
@@ -104,7 +105,7 @@ _Example: simple retrieval_
 
 ```go
 _ = os.Setenv("APP_ENV", "staging")
-godump.Dump(env.GetAppEnv())
+env.Dump(env.GetAppEnv())
 
 // #string "staging"
 ```
@@ -117,7 +118,7 @@ _Example: match any allowed environment_
 
 ```go
 _ = os.Setenv("APP_ENV", "staging")
-godump.Dump(env.IsAppEnv(env.Production, env.Staging))
+env.Dump(env.IsAppEnv(env.Production, env.Staging))
 
 // #bool true
 ```
@@ -126,7 +127,7 @@ _Example: unmatched environment_
 
 ```go
 _ = os.Setenv("APP_ENV", "local")
-godump.Dump(env.IsAppEnv(env.Production, env.Staging))
+env.Dump(env.IsAppEnv(env.Production, env.Staging))
 
 // #bool false
 ```
@@ -137,7 +138,7 @@ IsAppEnvDev checks if APP_ENV is "dev".
 
 ```go
 _ = os.Setenv("APP_ENV", env.Dev)
-godump.Dump(env.IsAppEnvDev())
+env.Dump(env.IsAppEnvDev())
 
 // #bool true
 ```
@@ -148,7 +149,7 @@ IsAppEnvLocal checks if APP_ENV is "local".
 
 ```go
 _ = os.Setenv("APP_ENV", env.Local)
-godump.Dump(env.IsAppEnvLocal())
+env.Dump(env.IsAppEnvLocal())
 
 // #bool true
 ```
@@ -159,7 +160,7 @@ IsAppEnvLocalOrStaging checks if APP_ENV is either "local" or "staging".
 
 ```go
 _ = os.Setenv("APP_ENV", env.Local)
-godump.Dump(env.IsAppEnvLocalOrStaging())
+env.Dump(env.IsAppEnvLocalOrStaging())
 
 // #bool true
 ```
@@ -170,7 +171,7 @@ IsAppEnvProduction checks if APP_ENV is "production".
 
 ```go
 _ = os.Setenv("APP_ENV", env.Production)
-godump.Dump(env.IsAppEnvProduction())
+env.Dump(env.IsAppEnvProduction())
 
 // #bool true
 ```
@@ -181,7 +182,7 @@ IsAppEnvStaging checks if APP_ENV is "staging".
 
 ```go
 _ = os.Setenv("APP_ENV", env.Staging)
-godump.Dump(env.IsAppEnvStaging())
+env.Dump(env.IsAppEnvStaging())
 
 // #bool true
 ```
@@ -194,7 +195,7 @@ _Example: APP_ENV explicitly testing_
 
 ```go
 _ = os.Setenv("APP_ENV", env.Testing)
-godump.Dump(env.IsAppEnvTesting())
+env.Dump(env.IsAppEnvTesting())
 
 // #bool true
 ```
@@ -203,7 +204,7 @@ _Example: no test markers_
 
 ```go
 _ = os.Unsetenv("APP_ENV")
-godump.Dump(env.IsAppEnvTesting())
+env.Dump(env.IsAppEnvTesting())
 
 // #bool false (outside of test binaries)
 ```
@@ -214,7 +215,7 @@ IsAppEnvTestingOrLocal checks if APP_ENV is "testing" or "local".
 
 ```go
 _ = os.Setenv("APP_ENV", env.Testing)
-godump.Dump(env.IsAppEnvTestingOrLocal())
+env.Dump(env.IsAppEnvTestingOrLocal())
 
 // #bool true
 ```
@@ -228,7 +229,7 @@ IsContainer detects common container runtimes (Docker, containerd, Kubernetes, P
 _Example: host vs container_
 
 ```go
-godump.Dump(env.IsContainer())
+env.Dump(env.IsContainer())
 
 // #bool true  (inside most containers)
 // #bool false (on bare-metal/VM hosts)
@@ -241,7 +242,7 @@ IsDocker reports whether the current process is running in a Docker container.
 _Example: typical host_
 
 ```go
-godump.Dump(env.IsDocker())
+env.Dump(env.IsDocker())
 
 // #bool false (unless inside Docker)
 ```
@@ -251,7 +252,7 @@ godump.Dump(env.IsDocker())
 IsDockerHost reports whether this container behaves like a Docker host.
 
 ```go
-godump.Dump(env.IsDockerHost())
+env.Dump(env.IsDockerHost())
 
 // #bool true  (when acting as Docker host)
 // #bool false (for normal containers/hosts)
@@ -262,7 +263,7 @@ godump.Dump(env.IsDockerHost())
 IsDockerInDocker reports whether we are inside a Docker-in-Docker environment.
 
 ```go
-godump.Dump(env.IsDockerInDocker())
+env.Dump(env.IsDockerInDocker())
 
 // #bool true  (inside DinD containers)
 // #bool false (on hosts or non-DinD containers)
@@ -274,7 +275,7 @@ IsHostEnvironment reports whether the process is running *outside* any
 container or orchestrated runtime.
 
 ```go
-godump.Dump(env.IsHostEnvironment())
+env.Dump(env.IsHostEnvironment())
 
 // #bool true  (on bare-metal/VM hosts)
 // #bool false (inside containers)
@@ -285,10 +286,41 @@ godump.Dump(env.IsHostEnvironment())
 IsKubernetes reports whether the process is running inside Kubernetes.
 
 ```go
-godump.Dump(env.IsKubernetes())
+env.Dump(env.IsKubernetes())
 
 // #bool true  (inside Kubernetes pods)
 // #bool false (elsewhere)
+```
+
+## Debugging
+
+### <a id="dump"></a>Dump · readonly
+
+Dump is a convenience function that calls godump.Dump.
+
+_Example: integers_
+
+```go
+nums := []int{1, 2, 3}
+env.Dump(nums)
+
+// #[]int [
+//   0 => 1 #int
+//   1 => 2 #int
+//   2 => 3 #int
+// ]
+```
+
+_Example: multiple values_
+
+```go
+env.Dump("status", map[string]int{"ok": 1, "fail": 0})
+
+// #string "status"
+// #map[string]int [
+//   "fail" => 0 #int
+//   "ok"   => 1 #int
+// ]
 ```
 
 ## Environment loading
@@ -298,7 +330,7 @@ godump.Dump(env.IsKubernetes())
 IsEnvLoaded reports whether LoadEnvFileIfExists was executed in this process.
 
 ```go
-godump.Dump(env.IsEnvLoaded())
+env.Dump(env.IsEnvLoaded())
 
 // #bool true  (after LoadEnvFileIfExists)
 // #bool false (otherwise)
@@ -317,7 +349,7 @@ _ = os.Chdir(tmp)
 _ = os.Setenv("APP_ENV", env.Testing)
 
 _ = env.LoadEnvFileIfExists()
-godump.Dump(os.Getenv("PORT"))
+env.Dump(os.Getenv("PORT"))
 
 // #string "9090"
 ```
@@ -327,7 +359,7 @@ _Example: default .env on a host_
 ```go
 _ = os.WriteFile(".env", []byte("SERVICE=api\nAPP_DEBUG=3"), 0o644)
 _ = env.LoadEnvFileIfExists()
-godump.Dump(os.Getenv("SERVICE"))
+env.Dump(os.Getenv("SERVICE"))
 
 // #string "api"
 ```
@@ -341,7 +373,7 @@ Arch returns the CPU architecture the binary is running on.
 _Example: print GOARCH_
 
 ```go
-godump.Dump(env.Arch())
+env.Dump(env.Arch())
 
 // #string "amd64"
 // #string "arm64"
@@ -352,7 +384,7 @@ godump.Dump(env.Arch())
 IsBSD reports whether the runtime OS is any BSD variant.
 
 ```go
-godump.Dump(env.IsBSD())
+env.Dump(env.IsBSD())
 
 // #bool true  (on BSD variants)
 // #bool false (elsewhere)
@@ -363,7 +395,7 @@ godump.Dump(env.IsBSD())
 IsContainerOS reports whether this OS is *typically* used as a container base.
 
 ```go
-godump.Dump(env.IsContainerOS())
+env.Dump(env.IsContainerOS())
 
 // #bool true  (on Linux)
 // #bool false (on macOS/Windows)
@@ -374,7 +406,7 @@ godump.Dump(env.IsContainerOS())
 IsLinux reports whether the runtime OS is Linux.
 
 ```go
-godump.Dump(env.IsLinux())
+env.Dump(env.IsLinux())
 
 // #bool true  (on Linux)
 // #bool false (on other OSes)
@@ -385,7 +417,7 @@ godump.Dump(env.IsLinux())
 IsMac reports whether the runtime OS is macOS (Darwin).
 
 ```go
-godump.Dump(env.IsMac())
+env.Dump(env.IsMac())
 
 // #bool true  (on macOS)
 // #bool false (elsewhere)
@@ -396,7 +428,7 @@ godump.Dump(env.IsMac())
 IsUnix reports whether the OS is Unix-like.
 
 ```go
-godump.Dump(env.IsUnix())
+env.Dump(env.IsUnix())
 
 // #bool true  (on Unix-like OSes)
 // #bool false (e.g., on Windows or Plan 9)
@@ -407,7 +439,7 @@ godump.Dump(env.IsUnix())
 IsWindows reports whether the runtime OS is Windows.
 
 ```go
-godump.Dump(env.IsWindows())
+env.Dump(env.IsWindows())
 
 // #bool true  (on Windows)
 // #bool false (elsewhere)
@@ -420,7 +452,7 @@ OS returns the current operating system identifier.
 _Example: inspect GOOS_
 
 ```go
-godump.Dump(env.OS())
+env.Dump(env.OS())
 
 // #string "linux"   (on Linux)
 // #string "darwin"  (on macOS)
@@ -438,7 +470,7 @@ _Example: fallback when unset_
 ```go
 os.Unsetenv("DB_HOST")
 host := env.Get("DB_HOST", "localhost")
-godump.Dump(host)
+env.Dump(host)
 
 // #string "localhost"
 ```
@@ -448,7 +480,7 @@ _Example: prefer existing value_
 ```go
 _ = os.Setenv("DB_HOST", "db.internal")
 host = env.Get("DB_HOST", "localhost")
-godump.Dump(host)
+env.Dump(host)
 
 // #string "db.internal"
 ```
@@ -462,7 +494,7 @@ _Example: numeric truthy_
 ```go
 _ = os.Setenv("DEBUG", "1")
 debug := env.GetBool("DEBUG", "false")
-godump.Dump(debug)
+env.Dump(debug)
 
 // #bool true
 ```
@@ -472,7 +504,7 @@ _Example: fallback string_
 ```go
 os.Unsetenv("DEBUG")
 debug = env.GetBool("DEBUG", "false")
-godump.Dump(debug)
+env.Dump(debug)
 
 // #bool false
 ```
@@ -486,7 +518,7 @@ _Example: override request timeout_
 ```go
 _ = os.Setenv("HTTP_TIMEOUT", "30s")
 timeout := env.GetDuration("HTTP_TIMEOUT", "5s")
-godump.Dump(timeout)
+env.Dump(timeout)
 
 // #time.Duration 30s
 ```
@@ -496,7 +528,7 @@ _Example: fallback when unset_
 ```go
 os.Unsetenv("HTTP_TIMEOUT")
 timeout = env.GetDuration("HTTP_TIMEOUT", "5s")
-godump.Dump(timeout)
+env.Dump(timeout)
 
 // #time.Duration 5s
 ```
@@ -510,7 +542,7 @@ _Example: accept only staged environments_
 ```go
 _ = os.Setenv("APP_ENV", "prod")
 appEnv := env.GetEnum("APP_ENV", "dev", []string{"dev", "staging", "prod"})
-godump.Dump(appEnv)
+env.Dump(appEnv)
 
 // #string "prod"
 ```
@@ -520,7 +552,7 @@ _Example: fallback when unset_
 ```go
 os.Unsetenv("APP_ENV")
 appEnv = env.GetEnum("APP_ENV", "dev", []string{"dev", "staging", "prod"})
-godump.Dump(appEnv)
+env.Dump(appEnv)
 
 // #string "dev"
 ```
@@ -534,7 +566,7 @@ _Example: override threshold_
 ```go
 _ = os.Setenv("THRESHOLD", "0.82")
 threshold := env.GetFloat("THRESHOLD", "0.75")
-godump.Dump(threshold)
+env.Dump(threshold)
 
 // #float64 0.82
 ```
@@ -544,7 +576,7 @@ _Example: fallback with decimal string_
 ```go
 os.Unsetenv("THRESHOLD")
 threshold = env.GetFloat("THRESHOLD", "0.75")
-godump.Dump(threshold)
+env.Dump(threshold)
 
 // #float64 0.75
 ```
@@ -558,7 +590,7 @@ _Example: fallback used_
 ```go
 os.Unsetenv("PORT")
 port := env.GetInt("PORT", "3000")
-godump.Dump(port)
+env.Dump(port)
 
 // #int 3000
 ```
@@ -568,7 +600,7 @@ _Example: env overrides fallback_
 ```go
 _ = os.Setenv("PORT", "8080")
 port = env.GetInt("PORT", "3000")
-godump.Dump(port)
+env.Dump(port)
 
 // #int 8080
 ```
@@ -582,7 +614,7 @@ _Example: parse large numbers safely_
 ```go
 _ = os.Setenv("MAX_SIZE", "1048576")
 size := env.GetInt64("MAX_SIZE", "512")
-godump.Dump(size)
+env.Dump(size)
 
 // #int64 1048576
 ```
@@ -592,7 +624,7 @@ _Example: fallback when unset_
 ```go
 os.Unsetenv("MAX_SIZE")
 size = env.GetInt64("MAX_SIZE", "512")
-godump.Dump(size)
+env.Dump(size)
 
 // #int64 512
 ```
@@ -606,7 +638,7 @@ _Example: parse throttling config_
 ```go
 _ = os.Setenv("LIMITS", "read=10, write=5, burst=20")
 limits := env.GetMap("LIMITS", "")
-godump.Dump(limits)
+env.Dump(limits)
 
 // #map[string]string [
 //  "burst" => "20" #string
@@ -620,7 +652,7 @@ _Example: returns empty map when unset or blank_
 ```go
 os.Unsetenv("LIMITS")
 limits = env.GetMap("LIMITS", "")
-godump.Dump(limits)
+env.Dump(limits)
 
 // #map[string]string []
 ```
@@ -634,7 +666,7 @@ _Example: trimmed addresses_
 ```go
 _ = os.Setenv("PEERS", "10.0.0.1, 10.0.0.2")
 peers := env.GetSlice("PEERS", "")
-godump.Dump(peers)
+env.Dump(peers)
 
 // #[]string [
 //  0 => "10.0.0.1" #string
@@ -647,7 +679,7 @@ _Example: empty becomes empty slice_
 ```go
 os.Unsetenv("PEERS")
 peers = env.GetSlice("PEERS", "")
-godump.Dump(peers)
+env.Dump(peers)
 
 // #[]string []
 ```
@@ -661,7 +693,7 @@ _Example: defaults to fallback when missing_
 ```go
 os.Unsetenv("WORKERS")
 workers := env.GetUint("WORKERS", "4")
-godump.Dump(workers)
+env.Dump(workers)
 
 // #uint 4
 ```
@@ -671,7 +703,7 @@ _Example: uses provided unsigned value_
 ```go
 _ = os.Setenv("WORKERS", "16")
 workers = env.GetUint("WORKERS", "4")
-godump.Dump(workers)
+env.Dump(workers)
 
 // #uint 16
 ```
@@ -685,7 +717,7 @@ _Example: high range values_
 ```go
 _ = os.Setenv("MAX_ITEMS", "5000")
 maxItems := env.GetUint64("MAX_ITEMS", "100")
-godump.Dump(maxItems)
+env.Dump(maxItems)
 
 // #uint64 5000
 ```
@@ -695,7 +727,7 @@ _Example: fallback when unset_
 ```go
 os.Unsetenv("MAX_ITEMS")
 maxItems = env.GetUint64("MAX_ITEMS", "100")
-godump.Dump(maxItems)
+env.Dump(maxItems)
 
 // #uint64 100
 ```
@@ -709,7 +741,7 @@ _Example: required secret_
 ```go
 _ = os.Setenv("API_SECRET", "s3cr3t")
 secret := env.MustGet("API_SECRET")
-godump.Dump(secret)
+env.Dump(secret)
 
 // #string "s3cr3t"
 ```
@@ -730,7 +762,7 @@ _Example: gate features explicitly_
 ```go
 _ = os.Setenv("FEATURE_ENABLED", "true")
 enabled := env.MustGetBool("FEATURE_ENABLED")
-godump.Dump(enabled)
+env.Dump(enabled)
 
 // #bool true
 ```
@@ -751,7 +783,7 @@ _Example: ensure numeric port_
 ```go
 _ = os.Setenv("PORT", "8080")
 port := env.MustGetInt("PORT")
-godump.Dump(port)
+env.Dump(port)
 
 // #int 8080
 ```

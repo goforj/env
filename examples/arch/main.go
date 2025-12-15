@@ -3,16 +3,13 @@
 
 package main
 
-import (
-	"github.com/goforj/env"
-	"github.com/goforj/godump"
-)
+import "github.com/goforj/env"
 
 func main() {
 	// Arch returns the CPU architecture the binary is running on.
 
 	// Example: print GOARCH
-	godump.Dump(env.Arch())
+	env.Dump(env.Arch())
 
 	// #string "amd64"
 	// #string "arm64"

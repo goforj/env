@@ -5,7 +5,6 @@ package main
 
 import (
 	"github.com/goforj/env"
-	"github.com/goforj/godump"
 	"os"
 )
 
@@ -15,7 +14,7 @@ func main() {
 	// Example: gate features explicitly
 	_ = os.Setenv("FEATURE_ENABLED", "true")
 	enabled := env.MustGetBool("FEATURE_ENABLED")
-	godump.Dump(enabled)
+	env.Dump(enabled)
 
 	// #bool true
 

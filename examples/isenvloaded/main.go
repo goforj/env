@@ -3,15 +3,12 @@
 
 package main
 
-import (
-	"github.com/goforj/env"
-	"github.com/goforj/godump"
-)
+import "github.com/goforj/env"
 
 func main() {
 	// IsEnvLoaded reports whether LoadEnvFileIfExists was executed in this process.
 
-	godump.Dump(env.IsEnvLoaded())
+	env.Dump(env.IsEnvLoaded())
 
 	// #bool true  (after LoadEnvFileIfExists)
 	// #bool false (otherwise)

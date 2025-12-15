@@ -3,15 +3,12 @@
 
 package main
 
-import (
-	"github.com/goforj/env"
-	"github.com/goforj/godump"
-)
+import "github.com/goforj/env"
 
 func main() {
 	// IsBSD reports whether the runtime OS is any BSD variant.
 
-	godump.Dump(env.IsBSD())
+	env.Dump(env.IsBSD())
 
 	// #bool true  (on BSD variants)
 	// #bool false (elsewhere)

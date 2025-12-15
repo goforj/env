@@ -5,7 +5,6 @@ package main
 
 import (
 	"github.com/goforj/env"
-	"github.com/goforj/godump"
 	"os"
 )
 
@@ -15,14 +14,14 @@ func main() {
 	// Example: fallback used
 	os.Unsetenv("PORT")
 	port := env.GetInt("PORT", "3000")
-	godump.Dump(port)
+	env.Dump(port)
 
 	// #int 3000
 
 	// Example: env overrides fallback
 	_ = os.Setenv("PORT", "8080")
 	port = env.GetInt("PORT", "3000")
-	godump.Dump(port)
+	env.Dump(port)
 
 	// #int 8080
 }

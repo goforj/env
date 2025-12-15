@@ -3,16 +3,13 @@
 
 package main
 
-import (
-	"github.com/goforj/env"
-	"github.com/goforj/godump"
-)
+import "github.com/goforj/env"
 
 func main() {
 	// OS returns the current operating system identifier.
 
 	// Example: inspect GOOS
-	godump.Dump(env.OS())
+	env.Dump(env.OS())
 
 	// #string "linux"   (on Linux)
 	// #string "darwin"  (on macOS)

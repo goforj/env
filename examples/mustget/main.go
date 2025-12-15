@@ -5,7 +5,6 @@ package main
 
 import (
 	"github.com/goforj/env"
-	"github.com/goforj/godump"
 	"os"
 )
 
@@ -15,7 +14,7 @@ func main() {
 	// Example: required secret
 	_ = os.Setenv("API_SECRET", "s3cr3t")
 	secret := env.MustGet("API_SECRET")
-	godump.Dump(secret)
+	env.Dump(secret)
 
 	// #string "s3cr3t"
 
