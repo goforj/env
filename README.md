@@ -27,7 +27,7 @@
 - 🔐 **Strongly typed getters** – `int`, `bool`, `float`, `duration`, slices, maps
 - 🧯 **Safe fallbacks** – never panic, never accidentally empty
 - 🌎 **Application environment helpers** – `dev`, `local`, `prod`
-- 🧩 **Zero dependencies** – pure Go, lightweight
+- 🧩 **Minimal dependencies** – Pure Go, lightweight, minimal surface area
 - 🧭 **Framework-agnostic** – works with any Go app
 - 📐 **Enum validation** – constrain values with allowed sets
 - 🧼 **Predictable behavior** – no magic, no global state surprises
