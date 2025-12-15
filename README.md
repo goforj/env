@@ -68,6 +68,16 @@ debug := env.GetBool("DEBUG", false)
 timeout := env.GetDuration("REQUEST_TIMEOUT", time.Second*5)
 ```
 
+## Runnable examples
+
+Every function has a corresponding runnable example under [`./examples`](./examples).
+
+These examples are **generated directly from the documentation blocks** of each function, ensuring the docs and code never drift. These are the same examples you see here in the README and GoDoc.
+
+An automated test executes **every example** to verify it builds and runs successfully.
+
+This guarantees all examples are valid, up-to-date, and remain functional as the API evolves.
+
 ### Environment file loading
 
 This package uses `github.com/joho/godotenv` for `.env` file loading.
