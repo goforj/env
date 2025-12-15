@@ -1,22 +1,36 @@
 <p align="center">
-  <img src="./docs/images/logo.png" width="500" alt="goforj/env – typed environment variables for Go">
+  <img src="./docs/assets/logo.png" width="600" alt="goforj/env logo">
 </p>
 
 <p align="center">
-  <strong>Typed environment variables for Go with safe defaults.</strong><br>
-  Zero-ceremony config access, app environment helpers, and predictable behavior.
+    Typed environment variables for Go – safe defaults, app env helpers, and zero-ceremony configuration.
 </p>
 
 <p align="center">
-  <a href="https://pkg.go.dev/github.com/goforj/env">
-    <img src="https://pkg.go.dev/badge/github.com/goforj/env.svg" alt="Go Reference">
-  </a>
-  <a href="LICENSE">
-    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License">
-  </a>
+    <a href="https://pkg.go.dev/github.com/goforj/env"><img src="https://pkg.go.dev/badge/github.com/goforj/env.svg" alt="Go Reference"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+    <a href="https://github.com/goforj/env/actions"><img src="https://github.com/goforj/env/actions/workflows/test.yml/badge.svg" alt="Go Test"></a>
+    <a href="https://golang.org"><img src="https://img.shields.io/badge/go-1.18+-blue?logo=go" alt="Go version"></a>
+    <img src="https://img.shields.io/github/v/tag/goforj/env?label=version&sort=semver" alt="Latest tag">
+    <a href="https://goreportcard.com/report/github.com/goforj/env"><img src="https://goreportcard.com/badge/github.com/goforj/env" alt="Go Report Card"></a>
 </p>
 
----
+<p align="center">
+  <code>env</code> provides strongly-typed access to environment variables with predictable fallbacks.  
+  Eliminate string parsing, centralize app environment checks, and keep configuration boring.  
+  Designed to feel native to Go — and invisible when things are working.
+</p>
+
+# Features
+
+- 🔐 **Strongly typed getters** – `int`, `bool`, `float`, `duration`, slices, maps
+- 🧯 **Safe fallbacks** – never panic, never accidentally empty
+- 🌎 **Application environment helpers** – `dev`, `local`, `prod`
+- 🧩 **Zero dependencies** – pure Go, lightweight
+- 🧭 **Framework-agnostic** – works with any Go app
+- 📐 **Enum validation** – constrain values with allowed sets
+- 🧼 **Predictable behavior** – no magic, no global state surprises
+- 🧱 **Composable building block** – ideal for config structs and startup wiring
 
 ## Why env?
 
