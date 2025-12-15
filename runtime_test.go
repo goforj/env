@@ -86,6 +86,15 @@ func TestIsBSD(t *testing.T) {
 	}
 }
 
+func TestIsBSD_False(t *testing.T) {
+	defer resetRuntime()
+
+	goos = "linux"
+	if IsBSD() {
+		t.Fatalf("expected IsBSD() == false for linux")
+	}
+}
+
 func TestIsUnix(t *testing.T) {
 	defer resetRuntime()
 

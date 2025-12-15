@@ -130,6 +130,46 @@ func TestGetEnumInvalid(t *testing.T) {
 	})
 }
 
+func TestTypedGetters_InvalidPanics(t *testing.T) {
+	cases := []struct {
+		key string
+		val string
+		fn  func()
+	}{
+		{"BAD_INT", "nope", func() { GetInt("BAD_INT", "") }},
+		{"BAD_INT64", "xx", func() { GetInt64("BAD_INT64", "") }},
+		{"BAD_UINT", "-1", func() { GetUint("BAD_UINT", "") }},
+		{"BAD_UINT64", "-1", func() { GetUint64("BAD_UINT64", "") }},
+		{"BAD_FLOAT", "not-float", func() { GetFloat("BAD_FLOAT", "") }},
+		{"BAD_BOOL", "maybe", func() { GetBool("BAD_BOOL", "") }},
+		{"BAD_DURATION", "sometimes", func() { GetDuration("BAD_DURATION", "") }},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.key, func(t *testing.T) {
+			withEnv(tt.key, tt.val, func() {
+				expectPanic(t, tt.key, tt.fn)
+			})
+		})
+	}
+}
+
+func TestSliceAndMapEmptyFallbacks(t *testing.T) {
+	withEnv("EMPTY_SLICE", "", func() {
+		got := GetSlice("EMPTY_SLICE", "")
+		if len(got) != 0 {
+			t.Fatalf("expected empty slice, got %v", got)
+		}
+	})
+
+	withEnv("EMPTY_MAP", "   ", func() {
+		got := GetMap("EMPTY_MAP", "")
+		if len(got) != 0 {
+			t.Fatalf("expected empty map, got %v", got)
+		}
+	})
+}
+
 func TestMustGet(t *testing.T) {
 	withEnv("SECRET", "abc123", func() {
 		if MustGet("SECRET") != "abc123" {

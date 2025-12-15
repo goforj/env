@@ -119,6 +119,31 @@ func TestIsDind_FalseWhenNormalContainer(t *testing.T) {
 	}
 }
 
+func TestIsDockerInDocker_NoDockerenv(t *testing.T) {
+	defer reset()
+
+	statFile = func(path string) (os.FileInfo, error) { return nil, os.ErrNotExist }
+
+	if IsDockerInDocker() {
+		t.Fatal("expected false when /.dockerenv missing")
+	}
+}
+
+func TestIsDockerInDocker_DockerenvNoSocket(t *testing.T) {
+	defer reset()
+
+	statFile = func(path string) (os.FileInfo, error) {
+		if path == fileDockerEnv {
+			return nil, nil
+		}
+		return nil, os.ErrNotExist
+	}
+
+	if IsDockerInDocker() {
+		t.Fatal("expected false when /.dockerenv exists but docker.sock missing")
+	}
+}
+
 func TestIsDockerHost_True(t *testing.T) {
 	defer reset()
 
@@ -154,6 +179,31 @@ func TestIsDockerHost_FalseWhenNamespaced(t *testing.T) {
 
 	if IsDockerHost() {
 		t.Fatal("expected IsDockerHost() == false in container namespace")
+	}
+}
+
+func TestIsDockerHost_NoSocket(t *testing.T) {
+	defer reset()
+
+	statFile = func(path string) (os.FileInfo, error) { return nil, os.ErrNotExist }
+	if IsDockerHost() {
+		t.Fatal("expected false when docker.sock missing")
+	}
+}
+
+func TestIsDockerHost_ReadError(t *testing.T) {
+	defer reset()
+
+	statFile = func(path string) (os.FileInfo, error) {
+		if path == fileDockerSock {
+			return nil, nil
+		}
+		return nil, os.ErrNotExist
+	}
+	readFile = func(path string) ([]byte, error) { return nil, os.ErrPermission }
+
+	if IsDockerHost() {
+		t.Fatal("expected false when cgroup read fails")
 	}
 }
 
@@ -253,5 +303,53 @@ func TestIsContainer_False(t *testing.T) {
 
 	if IsContainer() {
 		t.Fatal("expected false when no container signals")
+	}
+}
+
+func TestIsContainer_ReadErrorButEnvPresent(t *testing.T) {
+	defer reset()
+
+	statFile = func(path string) (os.FileInfo, error) { return nil, os.ErrNotExist }
+	readFile = func(path string) ([]byte, error) { return nil, os.ErrPermission }
+	mockEnv(map[string]string{"KUBERNETES_SERVICE_HOST": "10.0.0.1"})
+
+	if !IsContainer() {
+		t.Fatal("expected true when kube env present even if cgroup read fails")
+	}
+}
+
+func TestIsContainer_ReadErrorNoEnv(t *testing.T) {
+	defer reset()
+
+	statFile = func(path string) (os.FileInfo, error) { return nil, os.ErrNotExist }
+	readFile = func(path string) ([]byte, error) { return nil, os.ErrPermission }
+	mockEnv(nil)
+
+	if IsContainer() {
+		t.Fatal("expected false when cgroup read fails and no env hint")
+	}
+}
+
+func TestIsContainer_EnvWinsWhenCgroupClean(t *testing.T) {
+	defer reset()
+
+	statFile = func(path string) (os.FileInfo, error) { return nil, os.ErrNotExist }
+	readFile = func(path string) ([]byte, error) { return []byte("0::/user.slice"), nil }
+	mockEnv(map[string]string{"KUBERNETES_SERVICE_HOST": "10.0.0.2"})
+
+	if !IsContainer() {
+		t.Fatal("expected true when kube env set even with clean cgroup")
+	}
+}
+
+func TestIsContainer_GenericContainerCgroup(t *testing.T) {
+	defer reset()
+
+	statFile = func(path string) (os.FileInfo, error) { return nil, os.ErrNotExist }
+	readFile = func(path string) ([]byte, error) { return []byte("0::/container/abc"), nil }
+	mockEnv(nil)
+
+	if !IsContainer() {
+		t.Fatal("expected true for generic container cgroup marker")
 	}
 }
