@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/env.png" width="500" alt="goforj/env – typed environment variables for Go">
+  <img src="./docs/images/logo.png" width="500" alt="goforj/env – typed environment variables for Go">
 </p>
 
 <p align="center">
