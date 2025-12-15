@@ -24,14 +24,14 @@ const (
 // Example: APP_ENV explicitly testing
 //
 //	_ = os.Setenv("APP_ENV", env.Testing)
-//	godump.Println(env.IsAppEnvTesting())
+//	godump.Dump(env.IsAppEnvTesting())
 //
 //	// #bool true
 //
 // Example: no test markers
 //
 //	_ = os.Unsetenv("APP_ENV")
-//	godump.Println(env.IsAppEnvTesting())
+//	godump.Dump(env.IsAppEnvTesting())
 //
 //	// #bool false (outside of test binaries)
 func IsAppEnvTesting() bool {
@@ -60,7 +60,7 @@ func isTestSuffixFromArguments() bool {
 // Example: simple retrieval
 //
 //	_ = os.Setenv("APP_ENV", "staging")
-//	godump.Println(env.GetAppEnv())
+//	godump.Dump(env.GetAppEnv())
 //
 //	// #string "staging"
 func GetAppEnv() string {
@@ -74,14 +74,14 @@ func GetAppEnv() string {
 // Example: match any allowed environment
 //
 //	_ = os.Setenv("APP_ENV", "staging")
-//	godump.Println(env.IsAppEnv(env.Production, env.Staging))
+//	godump.Dump(env.IsAppEnv(env.Production, env.Staging))
 //
 //	// #bool true
 //
 // Example: unmatched environment
 //
 //	_ = os.Setenv("APP_ENV", "local")
-//	godump.Println(env.IsAppEnv(env.Production, env.Staging))
+//	godump.Dump(env.IsAppEnv(env.Production, env.Staging))
 //
 //	// #bool false
 func IsAppEnv(envs ...string) bool {
@@ -101,7 +101,7 @@ func IsAppEnv(envs ...string) bool {
 // Example:
 //
 //	_ = os.Setenv("APP_ENV", env.Production)
-//	godump.Println(env.IsAppEnvProduction())
+//	godump.Dump(env.IsAppEnvProduction())
 //
 //	// #bool true
 func IsAppEnvProduction() bool {
@@ -115,7 +115,7 @@ func IsAppEnvProduction() bool {
 // Example:
 //
 //	_ = os.Setenv("APP_ENV", env.Staging)
-//	godump.Println(env.IsAppEnvStaging())
+//	godump.Dump(env.IsAppEnvStaging())
 //
 //	// #bool true
 func IsAppEnvStaging() bool {
@@ -129,7 +129,7 @@ func IsAppEnvStaging() bool {
 // Example:
 //
 //	_ = os.Setenv("APP_ENV", env.Local)
-//	godump.Println(env.IsAppEnvLocalOrStaging())
+//	godump.Dump(env.IsAppEnvLocalOrStaging())
 //
 //	// #bool true
 func IsAppEnvLocalOrStaging() bool {
@@ -143,7 +143,7 @@ func IsAppEnvLocalOrStaging() bool {
 // Example:
 //
 //	_ = os.Setenv("APP_ENV", env.Local)
-//	godump.Println(env.IsAppEnvLocal())
+//	godump.Dump(env.IsAppEnvLocal())
 //
 //	// #bool true
 func IsAppEnvLocal() bool {
@@ -157,7 +157,7 @@ func IsAppEnvLocal() bool {
 // Example:
 //
 //	_ = os.Setenv("APP_ENV", env.Dev)
-//	godump.Println(env.IsAppEnvDev())
+//	godump.Dump(env.IsAppEnvDev())
 //
 //	// #bool true
 func IsAppEnvDev() bool {
@@ -171,7 +171,7 @@ func IsAppEnvDev() bool {
 // Example:
 //
 //	_ = os.Setenv("APP_ENV", env.Testing)
-//	godump.Println(env.IsAppEnvTestingOrLocal())
+//	godump.Dump(env.IsAppEnvTestingOrLocal())
 //
 //	// #bool true
 func IsAppEnvTestingOrLocal() bool {

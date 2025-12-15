@@ -9,7 +9,7 @@ package env
 //
 // Example:
 //
-//	godump.Println(env.IsHostEnvironment())
+//	godump.Dump(env.IsHostEnvironment())
 //
 //	// #bool true  (on bare-metal/VM hosts)
 //	// #bool false (inside containers)

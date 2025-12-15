@@ -105,9 +105,14 @@ func parseFuncs(root string) ([]*FuncDoc, error) {
 		return nil, err
 	}
 
-	pkg, ok := pkgs["env"]
+	pkgName, err := selectPackage(pkgs)
+	if err != nil {
+		return nil, err
+	}
+
+	pkg, ok := pkgs[pkgName]
 	if !ok {
-		return nil, fmt.Errorf(`package "env" not found`)
+		return nil, fmt.Errorf(`package %q not found`, pkgName)
 	}
 
 	funcs := map[string]*FuncDoc{}
@@ -248,6 +253,51 @@ func extractExamples(fset *token.FileSet, fn *ast.FuncDecl) []Example {
 
 	flush()
 	return out
+}
+
+// selectPackage picks the primary package to document.
+// Strategy:
+//  1. If only one package exists, use it.
+//  2. Prefer the non-"main" package with the most files.
+//  3. Fall back to the first package alphabetically.
+func selectPackage(pkgs map[string]*ast.Package) (string, error) {
+	if len(pkgs) == 0 {
+		return "", fmt.Errorf("no packages found")
+	}
+
+	if len(pkgs) == 1 {
+		for name := range pkgs {
+			return name, nil
+		}
+	}
+
+	type candidate struct {
+		name  string
+		count int
+	}
+
+	candidates := make([]candidate, 0, len(pkgs))
+	for name, pkg := range pkgs {
+		candidates = append(candidates, candidate{
+			name:  name,
+			count: len(pkg.Files),
+		})
+	}
+
+	sort.Slice(candidates, func(i, j int) bool {
+		if candidates[i].count == candidates[j].count {
+			return candidates[i].name < candidates[j].name
+		}
+		return candidates[i].count > candidates[j].count
+	})
+
+	for _, cand := range candidates {
+		if cand.name != "main" {
+			return cand.name, nil
+		}
+	}
+
+	return candidates[0].name, nil
 }
 
 //

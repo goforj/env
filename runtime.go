@@ -20,7 +20,7 @@ var (
 //
 // Example: inspect GOOS
 //
-//	godump.Println(env.OS())
+//	godump.Dump(env.OS())
 //
 //	// #string "linux"   (on Linux)
 //	// #string "darwin"  (on macOS)
@@ -37,7 +37,7 @@ func OS() string {
 //
 // Example: print GOARCH
 //
-//	godump.Println(env.Arch())
+//	godump.Dump(env.Arch())
 //
 //	// #string "amd64"
 //	// #string "arm64"
@@ -51,7 +51,7 @@ func Arch() string {
 //
 // Example:
 //
-//	godump.Println(env.IsLinux())
+//	godump.Dump(env.IsLinux())
 //
 //	// #bool true  (on Linux)
 //	// #bool false (on other OSes)
@@ -65,7 +65,7 @@ func IsLinux() bool {
 //
 // Example:
 //
-//	godump.Println(env.IsMac())
+//	godump.Dump(env.IsMac())
 //
 //	// #bool true  (on macOS)
 //	// #bool false (elsewhere)
@@ -79,7 +79,7 @@ func IsMac() bool {
 //
 // Example:
 //
-//	godump.Println(env.IsWindows())
+//	godump.Dump(env.IsWindows())
 //
 //	// #bool true  (on Windows)
 //	// #bool false (elsewhere)
@@ -95,7 +95,7 @@ func IsWindows() bool {
 //
 // Example:
 //
-//	godump.Println(env.IsBSD())
+//	godump.Dump(env.IsBSD())
 //
 //	// #bool true  (on BSD variants)
 //	// #bool false (elsewhere)
@@ -115,7 +115,7 @@ func IsBSD() bool {
 //
 // Example:
 //
-//	godump.Println(env.IsUnix())
+//	godump.Dump(env.IsUnix())
 //
 //	// #bool true  (on Unix-like OSes)
 //	// #bool false (e.g., on Windows or Plan 9)
@@ -136,7 +136,7 @@ func IsUnix() bool {
 //
 // Example:
 //
-//	godump.Println(env.IsContainerOS())
+//	godump.Dump(env.IsContainerOS())
 //
 //	// #bool true  (on Linux)
 //	// #bool false (on macOS/Windows)

@@ -17,15 +17,15 @@ import (
 //
 //	os.Unsetenv("DB_HOST")
 //	host := env.Get("DB_HOST", "localhost")
-//	godump.Println(host)
+//	godump.Dump(host)
 //
 //	// #string "localhost"
 //
 // Example: prefer existing value
 //
 //	_ = os.Setenv("DB_HOST", "db.internal")
-//	host := env.Get("DB_HOST", "localhost")
-//	godump.Println(host)
+//	host = env.Get("DB_HOST", "localhost")
+//	godump.Dump(host)
 //
 //	// #string "db.internal"
 func Get(key, fallback string) string {
@@ -46,15 +46,15 @@ func Get(key, fallback string) string {
 //
 //	os.Unsetenv("PORT")
 //	port := env.GetInt("PORT", "3000")
-//	godump.Println(port)
+//	godump.Dump(port)
 //
 //	// #int 3000
 //
 // Example: env overrides fallback
 //
 //	_ = os.Setenv("PORT", "8080")
-//	port := env.GetInt("PORT", "3000")
-//	godump.Println(port)
+//	port = env.GetInt("PORT", "3000")
+//	godump.Dump(port)
 //
 //	// #int 8080
 func GetInt(key, fallback string) int {
@@ -74,15 +74,15 @@ func GetInt(key, fallback string) int {
 //
 //	_ = os.Setenv("MAX_SIZE", "1048576")
 //	size := env.GetInt64("MAX_SIZE", "512")
-//	godump.Println(size)
+//	godump.Dump(size)
 //
 //	// #int64 1048576
 //
 // Example: fallback when unset
 //
 //	os.Unsetenv("MAX_SIZE")
-//	size := env.GetInt64("MAX_SIZE", "512")
-//	godump.Println(size)
+//	size = env.GetInt64("MAX_SIZE", "512")
+//	godump.Dump(size)
 //
 //	// #int64 512
 func GetInt64(key, fallback string) int64 {
@@ -102,15 +102,15 @@ func GetInt64(key, fallback string) int64 {
 //
 //	os.Unsetenv("WORKERS")
 //	workers := env.GetUint("WORKERS", "4")
-//	godump.Println(workers)
+//	godump.Dump(workers)
 //
 //	// #uint 4
 //
 // Example: uses provided unsigned value
 //
 //	_ = os.Setenv("WORKERS", "16")
-//	workers := env.GetUint("WORKERS", "4")
-//	godump.Println(workers)
+//	workers = env.GetUint("WORKERS", "4")
+//	godump.Dump(workers)
 //
 //	// #uint 16
 func GetUint(key, fallback string) uint {
@@ -130,15 +130,15 @@ func GetUint(key, fallback string) uint {
 //
 //	_ = os.Setenv("MAX_ITEMS", "5000")
 //	maxItems := env.GetUint64("MAX_ITEMS", "100")
-//	godump.Println(maxItems)
+//	godump.Dump(maxItems)
 //
 //	// #uint64 5000
 //
 // Example: fallback when unset
 //
 //	os.Unsetenv("MAX_ITEMS")
-//	maxItems := env.GetUint64("MAX_ITEMS", "100")
-//	godump.Println(maxItems)
+//	maxItems = env.GetUint64("MAX_ITEMS", "100")
+//	godump.Dump(maxItems)
 //
 //	// #uint64 100
 func GetUint64(key, fallback string) uint64 {
@@ -158,15 +158,15 @@ func GetUint64(key, fallback string) uint64 {
 //
 //	_ = os.Setenv("THRESHOLD", "0.82")
 //	threshold := env.GetFloat("THRESHOLD", "0.75")
-//	godump.Println(threshold)
+//	godump.Dump(threshold)
 //
 //	// #float64 0.82
 //
 // Example: fallback with decimal string
 //
 //	os.Unsetenv("THRESHOLD")
-//	threshold := env.GetFloat("THRESHOLD", "0.75")
-//	godump.Println(threshold)
+//	threshold = env.GetFloat("THRESHOLD", "0.75")
+//	godump.Dump(threshold)
 //
 //	// #float64 0.75
 func GetFloat(key, fallback string) float64 {
@@ -188,15 +188,15 @@ func GetFloat(key, fallback string) float64 {
 //
 //	_ = os.Setenv("DEBUG", "1")
 //	debug := env.GetBool("DEBUG", "false")
-//	godump.Println(debug)
+//	godump.Dump(debug)
 //
 //	// #bool true
 //
 // Example: fallback string
 //
 //	os.Unsetenv("DEBUG")
-//	debug := env.GetBool("DEBUG", "false")
-//	godump.Println(debug)
+//	debug = env.GetBool("DEBUG", "false")
+//	godump.Dump(debug)
 //
 //	// #bool false
 func GetBool(key, fallback string) bool {
@@ -216,15 +216,15 @@ func GetBool(key, fallback string) bool {
 //
 //	_ = os.Setenv("HTTP_TIMEOUT", "30s")
 //	timeout := env.GetDuration("HTTP_TIMEOUT", "5s")
-//	godump.Println(timeout)
+//	godump.Dump(timeout)
 //
 //	// #time.Duration 30s
 //
 // Example: fallback when unset
 //
 //	os.Unsetenv("HTTP_TIMEOUT")
-//	timeout := env.GetDuration("HTTP_TIMEOUT", "5s")
-//	godump.Println(timeout)
+//	timeout = env.GetDuration("HTTP_TIMEOUT", "5s")
+//	godump.Dump(timeout)
 //
 //	// #time.Duration 5s
 func GetDuration(key, fallback string) time.Duration {
@@ -244,7 +244,7 @@ func GetDuration(key, fallback string) time.Duration {
 //
 //	_ = os.Setenv("PEERS", "10.0.0.1, 10.0.0.2")
 //	peers := env.GetSlice("PEERS", "")
-//	godump.Println(peers)
+//	godump.Dump(peers)
 //
 //	// #[]string [
 //	//  0 => "10.0.0.1" #string
@@ -254,8 +254,8 @@ func GetDuration(key, fallback string) time.Duration {
 // Example: empty becomes empty slice
 //
 //	os.Unsetenv("PEERS")
-//	peers := env.GetSlice("PEERS", "")
-//	godump.Println(peers)
+//	peers = env.GetSlice("PEERS", "")
+//	godump.Dump(peers)
 //
 //	// #[]string []
 func GetSlice(key, fallback string) []string {
@@ -279,7 +279,7 @@ func GetSlice(key, fallback string) []string {
 //
 //	_ = os.Setenv("LIMITS", "read=10, write=5, burst=20")
 //	limits := env.GetMap("LIMITS", "")
-//	godump.Println(limits)
+//	godump.Dump(limits)
 //
 //	// #map[string]string [
 //	//  "burst" => "20" #string
@@ -290,8 +290,8 @@ func GetSlice(key, fallback string) []string {
 // Example: returns empty map when unset or blank
 //
 //	os.Unsetenv("LIMITS")
-//	limits := env.GetMap("LIMITS", "")
-//	godump.Println(limits)
+//	limits = env.GetMap("LIMITS", "")
+//	godump.Dump(limits)
 //
 //	// #map[string]string []
 func GetMap(key, fallback string) map[string]string {
@@ -322,16 +322,16 @@ func GetMap(key, fallback string) map[string]string {
 // Example: accept only staged environments
 //
 //	_ = os.Setenv("APP_ENV", "prod")
-//	env := env.GetEnum("APP_ENV", "dev", []string{"dev", "staging", "prod"})
-//	godump.Println(env)
+//	appEnv := env.GetEnum("APP_ENV", "dev", []string{"dev", "staging", "prod"})
+//	godump.Dump(appEnv)
 //
 //	// #string "prod"
 //
 // Example: fallback when unset
 //
 //	os.Unsetenv("APP_ENV")
-//	env := env.GetEnum("APP_ENV", "dev", []string{"dev", "staging", "prod"})
-//	godump.Println(env)
+//	appEnv = env.GetEnum("APP_ENV", "dev", []string{"dev", "staging", "prod"})
+//	godump.Dump(appEnv)
 //
 //	// #string "dev"
 func GetEnum(key, fallback string, allowed []string) string {
@@ -352,14 +352,14 @@ func GetEnum(key, fallback string, allowed []string) string {
 //
 //	_ = os.Setenv("API_SECRET", "s3cr3t")
 //	secret := env.MustGet("API_SECRET")
-//	godump.Println(secret)
+//	godump.Dump(secret)
 //
 //	// #string "s3cr3t"
 //
 // Example: panic on missing value
 //
 //	os.Unsetenv("API_SECRET")
-//	secret := env.MustGet("API_SECRET") // panics: env variable missing: API_SECRET
+//	secret = env.MustGet("API_SECRET") // panics: env variable missing: API_SECRET
 func MustGet(key string) string {
 	val := os.Getenv(key)
 	if val == "" {
@@ -376,7 +376,7 @@ func MustGet(key string) string {
 //
 //	_ = os.Setenv("PORT", "8080")
 //	port := env.MustGetInt("PORT")
-//	godump.Println(port)
+//	godump.Dump(port)
 //
 //	// #int 8080
 //
@@ -396,7 +396,7 @@ func MustGetInt(key string) int {
 //
 //	_ = os.Setenv("FEATURE_ENABLED", "true")
 //	enabled := env.MustGetBool("FEATURE_ENABLED")
-//	godump.Println(enabled)
+//	godump.Dump(enabled)
 //
 //	// #bool true
 //

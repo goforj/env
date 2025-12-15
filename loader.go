@@ -42,7 +42,7 @@ var envLoaded = false
 //	_ = os.Setenv("APP_ENV", env.Testing)
 //
 //	_ = env.LoadEnvFileIfExists()
-//	godump.Println(os.Getenv("PORT"))
+//	godump.Dump(os.Getenv("PORT"))
 //
 //	// #string "9090"
 //
@@ -50,7 +50,7 @@ var envLoaded = false
 //
 //	_ = os.WriteFile(".env", []byte("SERVICE=api\nAPP_DEBUG=3"), 0o644)
 //	_ = env.LoadEnvFileIfExists()
-//	godump.Println(os.Getenv("SERVICE"))
+//	godump.Dump(os.Getenv("SERVICE"))
 //
 //	// #string "api"
 func LoadEnvFileIfExists() error {
@@ -100,7 +100,7 @@ func LoadEnvFileIfExists() error {
 //
 // Example:
 //
-//	godump.Println(env.IsEnvLoaded())
+//	godump.Dump(env.IsEnvLoaded())
 //
 //	// #bool true  (after LoadEnvFileIfExists)
 //	// #bool false (otherwise)
