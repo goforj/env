@@ -88,7 +88,8 @@ if env.IsAppEnvDev() {
 | Group | Functions |
 |------:|-----------|
 | **Application environment** | [GetAppEnv](#getappenv) [IsAppEnv](#isappenv) [IsAppEnvDev](#isappenvdev) [IsAppEnvLocal](#isappenvlocal) [IsAppEnvLocalOrStaging](#isappenvlocalorstaging) [IsAppEnvProduction](#isappenvproduction) [IsAppEnvStaging](#isappenvstaging) [IsAppEnvTesting](#isappenvtesting) [IsAppEnvTestingOrLocal](#isappenvtestingorlocal) |
-| **Other** | [IsContainer](#iscontainer) [IsDocker](#isdocker) [IsDockerHost](#isdockerhost) [IsDockerInDocker](#isdockerindocker) [IsEnvLoaded](#isenvloaded) [IsHostEnvironment](#ishostenvironment) [IsKubernetes](#iskubernetes) [LoadEnvFileIfExists](#loadenvfileifexists) |
+| **Container detection** | [IsContainer](#iscontainer) [IsDocker](#isdocker) [IsDockerHost](#isdockerhost) [IsDockerInDocker](#isdockerindocker) [IsHostEnvironment](#ishostenvironment) [IsKubernetes](#iskubernetes) |
+| **Environment loading** | [IsEnvLoaded](#isenvloaded) [LoadEnvFileIfExists](#loadenvfileifexists) |
 | **Runtime** | [Arch](#arch) [IsBSD](#isbsd) [IsContainerOS](#iscontaineros) [IsLinux](#islinux) [IsMac](#ismac) [IsUnix](#isunix) [IsWindows](#iswindows) [OS](#os) |
 | **Typed getters** | [Get](#get) [GetBool](#getbool) [GetDuration](#getduration) [GetEnum](#getenum) [GetFloat](#getfloat) [GetInt](#getint) [GetInt64](#getint64) [GetMap](#getmap) [GetSlice](#getslice) [GetUint](#getuint) [GetUint64](#getuint64) [MustGet](#mustget) [MustGetBool](#mustgetbool) [MustGetInt](#mustgetint) |
 
@@ -218,44 +219,118 @@ godump.Println(env.IsAppEnvTestingOrLocal())
 // #bool true
 ```
 
-## Other
+## Container detection
 
-### <a id="iscontainer"></a>IsContainer
+### <a id="iscontainer"></a>IsContainer · readonly
 
-IsContainer detects any container runtime.
+IsContainer detects common container runtimes (Docker, containerd, Kubernetes, Podman).
 
-### <a id="isdocker"></a>IsDocker
+_Example: host vs container_
+
+```go
+godump.Println(env.IsContainer())
+
+// #bool true  (inside most containers)
+// #bool false (on bare-metal/VM hosts)
+```
+
+### <a id="isdocker"></a>IsDocker · readonly
 
 IsDocker reports whether the current process is running in a Docker container.
 
-### <a id="isdockerhost"></a>IsDockerHost
+_Example: typical host_
+
+```go
+godump.Println(env.IsDocker())
+
+// #bool false (unless inside Docker)
+```
+
+### <a id="isdockerhost"></a>IsDockerHost · readonly
 
 IsDockerHost reports whether this container behaves like a Docker host.
 
-### <a id="isdockerindocker"></a>IsDockerInDocker
+```go
+godump.Println(env.IsDockerHost())
+
+// #bool true  (when acting as Docker host)
+// #bool false (for normal containers/hosts)
+```
+
+### <a id="isdockerindocker"></a>IsDockerInDocker · readonly
 
 IsDockerInDocker reports whether we are inside a Docker-in-Docker environment.
 
-### <a id="isenvloaded"></a>IsEnvLoaded
+```go
+godump.Println(env.IsDockerInDocker())
 
-IsEnvLoaded checks if the environment file has been loaded
+// #bool true  (inside DinD containers)
+// #bool false (on hosts or non-DinD containers)
+```
 
-### <a id="ishostenvironment"></a>IsHostEnvironment
+### <a id="ishostenvironment"></a>IsHostEnvironment · readonly
 
 IsHostEnvironment reports whether the process is running *outside* any
 container or orchestrated runtime.
 
-Being a Docker host does NOT count as being in a container.
+```go
+godump.Println(env.IsHostEnvironment())
 
-### <a id="iskubernetes"></a>IsKubernetes
+// #bool true  (on bare-metal/VM hosts)
+// #bool false (inside containers)
+```
 
-IsKubernetes reports whether running inside Kubernetes.
+### <a id="iskubernetes"></a>IsKubernetes · readonly
 
-### <a id="loadenvfileifexists"></a>LoadEnvFileIfExists
+IsKubernetes reports whether the process is running inside Kubernetes.
 
-LoadEnvFileIfExists loads environment file .env locally
-loads .env.testing if invoked from the context of a test file
-loads .env.host if invoked from the context of MacOS which references variables to communicate back to the docker network
+```go
+godump.Println(env.IsKubernetes())
+
+// #bool true  (inside Kubernetes pods)
+// #bool false (elsewhere)
+```
+
+## Environment loading
+
+### <a id="isenvloaded"></a>IsEnvLoaded · readonly
+
+IsEnvLoaded reports whether LoadEnvFileIfExists was executed in this process.
+
+```go
+godump.Println(env.IsEnvLoaded())
+
+// #bool true  (after LoadEnvFileIfExists)
+// #bool false (otherwise)
+```
+
+### <a id="loadenvfileifexists"></a>LoadEnvFileIfExists · mutates-process-env
+
+LoadEnvFileIfExists loads .env/.env.testing/.env.host when present.
+
+_Example: test-specific env file_
+
+```go
+tmp, _ := os.MkdirTemp("", "envdoc")
+_ = os.WriteFile(filepath.Join(tmp, ".env.testing"), []byte("PORT=9090\nAPP_DEBUG=0"), 0o644)
+_ = os.Chdir(tmp)
+_ = os.Setenv("APP_ENV", env.Testing)
+
+_ = env.LoadEnvFileIfExists()
+godump.Println(os.Getenv("PORT"))
+
+// #string "9090"
+```
+
+_Example: default .env on a host_
+
+```go
+_ = os.WriteFile(".env", []byte("SERVICE=api\nAPP_DEBUG=3"), 0o644)
+_ = env.LoadEnvFileIfExists()
+godump.Println(os.Getenv("SERVICE"))
+
+// #string "api"
+```
 
 ## Runtime
 

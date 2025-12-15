@@ -13,91 +13,92 @@ var (
 )
 
 // OS returns the current operating system identifier.
+// @group Runtime
+// @behavior readonly
 //
-// This corresponds to runtime.GOOS and will be one of:
+// Mirrors runtime.GOOS; tests may override via the internal shim.
 //
-//   - "linux"
-//   - "darwin"
-//   - "windows"
-//   - "freebsd", "openbsd", "netbsd", "dragonfly"
-//   - "solaris", "aix", etc.
+// Example: inspect GOOS
 //
-// Example:
+//	godump.Println(env.OS())
 //
-//    fmt.Println(env.OS()) // prints: linux
-//
+//	// #string "linux"   (on Linux)
+//	// #string "darwin"  (on macOS)
+//	// #string "windows" (on Windows)
 func OS() string {
 	return goos
 }
 
 // Arch returns the CPU architecture the binary is running on.
+// @group Runtime
+// @behavior readonly
 //
-// This corresponds to runtime.GOARCH and may be:
+// Mirrors runtime.GOARCH; tests may override via the internal shim.
 //
-//   - "amd64"
-//   - "arm64"
-//   - "386"
-//   - "arm"
-//   - etc.
+// Example: print GOARCH
 //
-// Example:
+//	godump.Println(env.Arch())
 //
-//    fmt.Println(env.Arch()) // prints: arm64
-//
+//	// #string "amd64"
+//	// #string "arm64"
 func Arch() string {
 	return goarch
 }
 
 // IsLinux reports whether the runtime OS is Linux.
+// @group Runtime
+// @behavior readonly
 //
 // Example:
 //
-//    if env.IsLinux() {
-//        fmt.Println("Running on Linux")
-//    }
+//	godump.Println(env.IsLinux())
 //
+//	// #bool true  (on Linux)
+//	// #bool false (on other OSes)
 func IsLinux() bool {
 	return goos == "linux"
 }
 
 // IsMac reports whether the runtime OS is macOS (Darwin).
+// @group Runtime
+// @behavior readonly
 //
 // Example:
 //
-//    if env.IsMac() {
-//        fmt.Println("Running on macOS")
-//    }
+//	godump.Println(env.IsMac())
 //
+//	// #bool true  (on macOS)
+//	// #bool false (elsewhere)
 func IsMac() bool {
 	return goos == "darwin"
 }
 
 // IsWindows reports whether the runtime OS is Windows.
+// @group Runtime
+// @behavior readonly
 //
 // Example:
 //
-//    if env.IsWindows() {
-//        fmt.Println("Running on Windows")
-//    }
+//	godump.Println(env.IsWindows())
 //
+//	// #bool true  (on Windows)
+//	// #bool false (elsewhere)
 func IsWindows() bool {
 	return goos == "windows"
 }
 
 // IsBSD reports whether the runtime OS is any BSD variant.
+// @group Runtime
+// @behavior readonly
 //
-// BSD identifiers include:
-//   - "freebsd"
-//   - "openbsd"
-//   - "netbsd"
-//   - "dragonfly"
+// BSD identifiers include: freebsd, openbsd, netbsd, dragonfly.
 //
 // Example:
 //
-//    if env.IsBSD() {
-//        fmt.Println("Running on a BSD system")
-//    }
+//	godump.Println(env.IsBSD())
 //
+//	// #bool true  (on BSD variants)
+//	// #bool false (elsewhere)
 func IsBSD() bool {
 	switch goos {
 	case "freebsd", "openbsd", "netbsd", "dragonfly":
@@ -107,19 +108,17 @@ func IsBSD() bool {
 }
 
 // IsUnix reports whether the OS is Unix-like.
+// @group Runtime
+// @behavior readonly
 //
-// This returns true for:
-//   - Linux
-//   - macOS (Darwin)
-//   - BSD variants
-//   - Solaris, AIX
+// Returns true for Linux, macOS, BSD, Solaris, and AIX identifiers.
 //
 // Example:
 //
-//    if env.IsUnix() {
-//        fmt.Println("POSIX-compliant system detected")
-//    }
+//	godump.Println(env.IsUnix())
 //
+//	// #bool true  (on Unix-like OSes)
+//	// #bool false (e.g., on Windows or Plan 9)
 func IsUnix() bool {
 	switch goos {
 	case "linux", "darwin", "freebsd", "openbsd", "netbsd", "dragonfly", "solaris", "aix":
@@ -129,18 +128,18 @@ func IsUnix() bool {
 }
 
 // IsContainerOS reports whether this OS is *typically* used as a container base.
+// @group Runtime
+// @behavior readonly
 //
-// This does NOT indicate whether you are *inside* a container —
-// only that this OS is the kind most often found in container images.
-//
-// Currently returns true for Linux.
+// This does NOT indicate you are inside a container — only that the OS is usually
+// the base for container images (currently Linux).
 //
 // Example:
 //
-//    if env.IsContainerOS() {
-//        fmt.Println("Likely running in a Docker-optimized OS image")
-//    }
+//	godump.Println(env.IsContainerOS())
 //
+//	// #bool true  (on Linux)
+//	// #bool false (on macOS/Windows)
 func IsContainerOS() bool {
 	return goos == "linux"
 }

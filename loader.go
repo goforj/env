@@ -24,9 +24,35 @@ const (
 // envLoaded is a flag to check if the environment file has been loaded
 var envLoaded = false
 
-// LoadEnvFileIfExists loads environment file .env locally
-// loads .env.testing if invoked from the context of a test file
-// loads .env.host if invoked from the context of MacOS which references variables to communicate back to the docker network
+// LoadEnvFileIfExists loads .env/.env.testing/.env.host when present.
+// @group Environment loading
+// @behavior mutates-process-env
+//
+// Behavior:
+//   - Sets APP_ENV=local on macOS/Windows when unset.
+//   - Chooses .env.testing when APP_ENV indicates tests (or Go test flags are present).
+//   - Loads .env.host for host-to-container networking when running on the host or DinD.
+//   - Idempotent: subsequent calls no-op after the first load.
+//
+// Example: test-specific env file
+//
+//	tmp, _ := os.MkdirTemp("", "envdoc")
+//	_ = os.WriteFile(filepath.Join(tmp, ".env.testing"), []byte("PORT=9090\nAPP_DEBUG=0"), 0o644)
+//	_ = os.Chdir(tmp)
+//	_ = os.Setenv("APP_ENV", env.Testing)
+//
+//	_ = env.LoadEnvFileIfExists()
+//	godump.Println(os.Getenv("PORT"))
+//
+//	// #string "9090"
+//
+// Example: default .env on a host
+//
+//	_ = os.WriteFile(".env", []byte("SERVICE=api\nAPP_DEBUG=3"), 0o644)
+//	_ = env.LoadEnvFileIfExists()
+//	godump.Println(os.Getenv("SERVICE"))
+//
+//	// #string "api"
 func LoadEnvFileIfExists() error {
 	if runtime.GOOS == runtimeDarwin || runtime.GOOS == runtimeWindows {
 		_ = os.Setenv("APP_ENV", Local)
@@ -68,7 +94,16 @@ func LoadEnvFileIfExists() error {
 	return nil
 }
 
-// IsEnvLoaded checks if the environment file has been loaded
+// IsEnvLoaded reports whether LoadEnvFileIfExists was executed in this process.
+// @group Environment loading
+// @behavior readonly
+//
+// Example:
+//
+//	godump.Println(env.IsEnvLoaded())
+//
+//	// #bool true  (after LoadEnvFileIfExists)
+//	// #bool false (otherwise)
 func IsEnvLoaded() bool {
 	return envLoaded
 }

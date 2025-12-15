@@ -27,6 +27,16 @@ const (
 )
 
 // IsDocker reports whether the current process is running in a Docker container.
+// @group Container detection
+// @behavior readonly
+//
+// Heuristics: presence of /.dockerenv or Docker-related cgroup markers.
+//
+// Example: typical host
+//
+//	godump.Println(env.IsDocker())
+//
+//	// #bool false (unless inside Docker)
 func IsDocker() bool {
 	// Check /.dockerenv
 	if _, err := statFile(fileDockerEnv); err == nil {
@@ -43,6 +53,17 @@ func IsDocker() bool {
 }
 
 // IsDockerInDocker reports whether we are inside a Docker-in-Docker environment.
+// @group Container detection
+// @behavior readonly
+//
+// Requires /.dockerenv to be present and a docker.sock exposed to the container.
+//
+// Example:
+//
+//	godump.Println(env.IsDockerInDocker())
+//
+//	// #bool true  (inside DinD containers)
+//	// #bool false (on hosts or non-DinD containers)
 func IsDockerInDocker() bool {
 	// If /.dockerenv does not exist → not a Docker *container* at all.
 	if _, err := statFile(fileDockerEnv); err != nil {
@@ -58,6 +79,17 @@ func IsDockerInDocker() bool {
 }
 
 // IsDockerHost reports whether this container behaves like a Docker host.
+// @group Container detection
+// @behavior readonly
+//
+// True when docker.sock is available but container-level cgroups are absent.
+//
+// Example:
+//
+//	godump.Println(env.IsDockerHost())
+//
+//	// #bool true  (when acting as Docker host)
+//	// #bool false (for normal containers/hosts)
 func IsDockerHost() bool {
 	if _, err := statFile(fileDockerSock); err != nil {
 		return false
@@ -76,7 +108,16 @@ func IsDockerHost() bool {
 	return false
 }
 
-// IsContainer detects any container runtime.
+// IsContainer detects common container runtimes (Docker, containerd, Kubernetes, Podman).
+// @group Container detection
+// @behavior readonly
+//
+// Example: host vs container
+//
+//	godump.Println(env.IsContainer())
+//
+//	// #bool true  (inside most containers)
+//	// #bool false (on bare-metal/VM hosts)
 func IsContainer() bool {
 	if IsDocker() {
 		return true
@@ -99,7 +140,18 @@ func IsContainer() bool {
 	return false
 }
 
-// IsKubernetes reports whether running inside Kubernetes.
+// IsKubernetes reports whether the process is running inside Kubernetes.
+// @group Container detection
+// @behavior readonly
+//
+// Checks the KUBERNETES_SERVICE_HOST env var and kubepods cgroup markers.
+//
+// Example:
+//
+//	godump.Println(env.IsKubernetes())
+//
+//	// #bool true  (inside Kubernetes pods)
+//	// #bool false (elsewhere)
 func IsKubernetes() bool {
 	if getEnv("KUBERNETES_SERVICE_HOST") != "" {
 		return true
