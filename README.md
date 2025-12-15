@@ -68,6 +68,12 @@ debug := env.GetBool("DEBUG", false)
 timeout := env.GetDuration("REQUEST_TIMEOUT", time.Second*5)
 ```
 
+## Environment file loading
+
+This package uses `github.com/joho/godotenv` for `.env` file loading.
+
+It is intentionally composed into the runtime detection and APP_ENV model rather than reimplemented.
+
 ## Runnable examples
 
 Every function has a corresponding runnable example under [`./examples`](./examples).
@@ -77,19 +83,6 @@ These examples are **generated directly from the documentation blocks** of each 
 An automated test executes **every example** to verify it builds and runs successfully.
 
 This guarantees all examples are valid, up-to-date, and remain functional as the API evolves.
-
-### Environment file loading
-
-This package uses `github.com/joho/godotenv` for `.env` file loading.
-It is intentionally composed into the runtime detection and APP_ENV model rather than reimplemented.
-
-### Application environment
-
-```go
-if env.IsAppEnvDev() {
-    // dev-only behavior
-}
-```
 
 <!-- api:embed:start -->
 
