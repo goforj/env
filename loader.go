@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/joho/godotenv"
 	"os"
-	"runtime"
 )
 
 // MaxDirectorySeekLevels is the number of directory
@@ -54,9 +53,7 @@ var envLoaded = false
 //
 //	// #string "api"
 func LoadEnvFileIfExists() error {
-	if runtime.GOOS == runtimeDarwin || runtime.GOOS == runtimeWindows {
-		_ = os.Setenv("APP_ENV", Local)
-	}
+	_ = os.Setenv("APP_ENV", Local)
 
 	if !envLoaded {
 		// use dev or testing envs depending on the environment
