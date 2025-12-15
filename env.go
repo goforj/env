@@ -7,13 +7,27 @@ import (
 	"time"
 )
 
-// Get returns the environment variable for the given key,
-// or the provided fallback if empty.
+// Get returns the environment variable for key or fallback when empty.
+// @group Typed getters
+// @behavior readonly
 //
-// Example:
+// Examples use github.com/goforj/godump to illustrate the concrete type.
 //
-//    dbHost := env.Get("DB_HOST", "localhost")
+// Example: fallback when unset
 //
+//	os.Unsetenv("DB_HOST")
+//	host := env.Get("DB_HOST", "localhost")
+//	godump.Println(host)
+//
+//	// #string "localhost"
+//
+// Example: prefer existing value
+//
+//	_ = os.Setenv("DB_HOST", "db.internal")
+//	host := env.Get("DB_HOST", "localhost")
+//	godump.Println(host)
+//
+//	// #string "db.internal"
 func Get(key, fallback string) string {
 	val := os.Getenv(key)
 	if len(val) == 0 {
@@ -22,12 +36,27 @@ func Get(key, fallback string) string {
 	return val
 }
 
-// GetInt parses an int from an environment variable with a fallback.
+// GetInt parses an int from an environment variable or fallback string.
+// @group Typed getters
+// @behavior panic
 //
-// Example:
+// Panics if the chosen value cannot be parsed as base-10 int.
 //
-//    port := env.GetInt("PORT", "8080")
+// Example: fallback used
 //
+//	os.Unsetenv("PORT")
+//	port := env.GetInt("PORT", "3000")
+//	godump.Println(port)
+//
+//	// #int 3000
+//
+// Example: env overrides fallback
+//
+//	_ = os.Setenv("PORT", "8080")
+//	port := env.GetInt("PORT", "3000")
+//	godump.Println(port)
+//
+//	// #int 8080
 func GetInt(key, fallback string) int {
 	val := Get(key, fallback)
 	ret, err := strconv.Atoi(val)
@@ -37,12 +66,25 @@ func GetInt(key, fallback string) int {
 	return ret
 }
 
-// GetInt64 parses an int64 from an environment variable.
+// GetInt64 parses an int64 from an environment variable or fallback string.
+// @group Typed getters
+// @behavior panic
 //
-// Example:
+// Example: parse large numbers safely
 //
-//    size := env.GetInt64("MAX_SIZE", "1024")
+//	_ = os.Setenv("MAX_SIZE", "1048576")
+//	size := env.GetInt64("MAX_SIZE", "512")
+//	godump.Println(size)
 //
+//	// #int64 1048576
+//
+// Example: fallback when unset
+//
+//	os.Unsetenv("MAX_SIZE")
+//	size := env.GetInt64("MAX_SIZE", "512")
+//	godump.Println(size)
+//
+//	// #int64 512
 func GetInt64(key, fallback string) int64 {
 	val := Get(key, fallback)
 	ret, err := strconv.ParseInt(val, 10, 64)
@@ -52,12 +94,25 @@ func GetInt64(key, fallback string) int64 {
 	return ret
 }
 
-// GetUint parses an unsigned int from environment variables.
+// GetUint parses a uint from an environment variable or fallback string.
+// @group Typed getters
+// @behavior panic
 //
-// Example:
+// Example: defaults to fallback when missing
 //
-//    workers := env.GetUint("WORKERS", "4")
+//	os.Unsetenv("WORKERS")
+//	workers := env.GetUint("WORKERS", "4")
+//	godump.Println(workers)
 //
+//	// #uint 4
+//
+// Example: uses provided unsigned value
+//
+//	_ = os.Setenv("WORKERS", "16")
+//	workers := env.GetUint("WORKERS", "4")
+//	godump.Println(workers)
+//
+//	// #uint 16
 func GetUint(key, fallback string) uint {
 	val := Get(key, fallback)
 	i, err := strconv.ParseUint(val, 10, 32)
@@ -67,12 +122,25 @@ func GetUint(key, fallback string) uint {
 	return uint(i)
 }
 
-// GetUint64 parses an unsigned 64-bit int from environment variables.
+// GetUint64 parses a uint64 from an environment variable or fallback string.
+// @group Typed getters
+// @behavior panic
 //
-// Example:
+// Example: high range values
 //
-//    maxItems := env.GetUint64("MAX_ITEMS", "5000")
+//	_ = os.Setenv("MAX_ITEMS", "5000")
+//	maxItems := env.GetUint64("MAX_ITEMS", "100")
+//	godump.Println(maxItems)
 //
+//	// #uint64 5000
+//
+// Example: fallback when unset
+//
+//	os.Unsetenv("MAX_ITEMS")
+//	maxItems := env.GetUint64("MAX_ITEMS", "100")
+//	godump.Println(maxItems)
+//
+//	// #uint64 100
 func GetUint64(key, fallback string) uint64 {
 	val := Get(key, fallback)
 	i, err := strconv.ParseUint(val, 10, 64)
@@ -82,12 +150,25 @@ func GetUint64(key, fallback string) uint64 {
 	return i
 }
 
-// GetFloat parses a float64 from an environment variable.
+// GetFloat parses a float64 from an environment variable or fallback string.
+// @group Typed getters
+// @behavior panic
 //
-// Example:
+// Example: override threshold
 //
-//    threshold := env.GetFloat("THRESHOLD", "0.75")
+//	_ = os.Setenv("THRESHOLD", "0.82")
+//	threshold := env.GetFloat("THRESHOLD", "0.75")
+//	godump.Println(threshold)
 //
+//	// #float64 0.82
+//
+// Example: fallback with decimal string
+//
+//	os.Unsetenv("THRESHOLD")
+//	threshold := env.GetFloat("THRESHOLD", "0.75")
+//	godump.Println(threshold)
+//
+//	// #float64 0.75
 func GetFloat(key, fallback string) float64 {
 	val := Get(key, fallback)
 	f, err := strconv.ParseFloat(val, 64)
@@ -97,14 +178,27 @@ func GetFloat(key, fallback string) float64 {
 	return f
 }
 
-// GetBool parses a boolean from an environment variable.
+// GetBool parses a boolean from an environment variable or fallback string.
+// @group Typed getters
+// @behavior panic
 //
-// Accepted values: true/false, 1/0, t/f, TRUE/FALSE.
+// Accepted values: true/false, 1/0, t/f (case-insensitive).
 //
-// Example:
+// Example: numeric truthy
 //
-//    debug := env.GetBool("DEBUG", "false")
+//	_ = os.Setenv("DEBUG", "1")
+//	debug := env.GetBool("DEBUG", "false")
+//	godump.Println(debug)
 //
+//	// #bool true
+//
+// Example: fallback string
+//
+//	os.Unsetenv("DEBUG")
+//	debug := env.GetBool("DEBUG", "false")
+//	godump.Println(debug)
+//
+//	// #bool false
 func GetBool(key, fallback string) bool {
 	val := Get(key, fallback)
 	ret, err := strconv.ParseBool(val)
@@ -115,11 +209,24 @@ func GetBool(key, fallback string) bool {
 }
 
 // GetDuration parses a Go duration string (e.g. "5s", "10m", "1h").
+// @group Typed getters
+// @behavior panic
 //
-// Example:
+// Example: override request timeout
 //
-//    timeout := env.GetDuration("HTTP_TIMEOUT", "5s")
+//	_ = os.Setenv("HTTP_TIMEOUT", "30s")
+//	timeout := env.GetDuration("HTTP_TIMEOUT", "5s")
+//	godump.Println(timeout)
 //
+//	// #time.Duration 30s
+//
+// Example: fallback when unset
+//
+//	os.Unsetenv("HTTP_TIMEOUT")
+//	timeout := env.GetDuration("HTTP_TIMEOUT", "5s")
+//	godump.Println(timeout)
+//
+//	// #time.Duration 5s
 func GetDuration(key, fallback string) time.Duration {
 	val := Get(key, fallback)
 	d, err := time.ParseDuration(val)
@@ -129,13 +236,28 @@ func GetDuration(key, fallback string) time.Duration {
 	return d
 }
 
-// GetSlice splits a comma-separated string into a []string.
+// GetSlice splits a comma-separated string into a []string with trimming.
+// @group Typed getters
+// @behavior readonly
 //
-// Example:
+// Example: trimmed addresses
 //
-//    peers := env.GetSlice("PEERS", "10.0.0.1,10.0.0.2")
-//    // → []string{"10.0.0.1", "10.0.0.2"}
+//	_ = os.Setenv("PEERS", "10.0.0.1, 10.0.0.2")
+//	peers := env.GetSlice("PEERS", "")
+//	godump.Println(peers)
 //
+//	// #[]string [
+//	//  0 => "10.0.0.1" #string
+//	//  1 => "10.0.0.2" #string
+//	// ]
+//
+// Example: empty becomes empty slice
+//
+//	os.Unsetenv("PEERS")
+//	peers := env.GetSlice("PEERS", "")
+//	godump.Println(peers)
+//
+//	// #[]string []
 func GetSlice(key, fallback string) []string {
 	val := Get(key, fallback)
 	if val == "" {
@@ -149,13 +271,29 @@ func GetSlice(key, fallback string) []string {
 	return parts
 }
 
-// GetMap parses key=value pairs separated by commas.
+// GetMap parses key=value pairs separated by commas into a map.
+// @group Typed getters
+// @behavior readonly
 //
-// Example:
+// Example: parse throttling config
 //
-//    limits := env.GetMap("LIMITS", "read=10,write=5")
-//    // → map[string]string{"read":"10", "write":"5"}
+//	_ = os.Setenv("LIMITS", "read=10, write=5, burst=20")
+//	limits := env.GetMap("LIMITS", "")
+//	godump.Println(limits)
 //
+//	// #map[string]string [
+//	//  "burst" => "20" #string
+//	//  "read"  => "10" #string
+//	//  "write" => "5" #string
+//	// ]
+//
+// Example: returns empty map when unset or blank
+//
+//	os.Unsetenv("LIMITS")
+//	limits := env.GetMap("LIMITS", "")
+//	godump.Println(limits)
+//
+//	// #map[string]string []
 func GetMap(key, fallback string) map[string]string {
 	val := Get(key, fallback)
 	m := map[string]string{}
@@ -176,11 +314,26 @@ func GetMap(key, fallback string) map[string]string {
 }
 
 // GetEnum ensures the environment variable's value is in the allowed list.
+// @group Typed getters
+// @behavior panic
 //
-// Example:
+// Panic occurs when the chosen value is not in the allowed slice (case-sensitive).
 //
-//    env := env.GetEnum("APP_ENV", "dev", []string{"dev","staging","prod"})
+// Example: accept only staged environments
 //
+//	_ = os.Setenv("APP_ENV", "prod")
+//	env := env.GetEnum("APP_ENV", "dev", []string{"dev", "staging", "prod"})
+//	godump.Println(env)
+//
+//	// #string "prod"
+//
+// Example: fallback when unset
+//
+//	os.Unsetenv("APP_ENV")
+//	env := env.GetEnum("APP_ENV", "dev", []string{"dev", "staging", "prod"})
+//	godump.Println(env)
+//
+//	// #string "dev"
 func GetEnum(key, fallback string, allowed []string) string {
 	val := Get(key, fallback)
 	for _, a := range allowed {
@@ -191,12 +344,22 @@ func GetEnum(key, fallback string, allowed []string) string {
 	panic("env: invalid enum value for " + key + ": " + val)
 }
 
-// MustGet returns the value of key or panics if missing.
+// MustGet returns the value of key or panics if missing/empty.
+// @group Typed getters
+// @behavior panic
 //
-// Example:
+// Example: required secret
 //
-//    secret := env.MustGet("API_SECRET")
+//	_ = os.Setenv("API_SECRET", "s3cr3t")
+//	secret := env.MustGet("API_SECRET")
+//	godump.Println(secret)
 //
+//	// #string "s3cr3t"
+//
+// Example: panic on missing value
+//
+//	os.Unsetenv("API_SECRET")
+//	secret := env.MustGet("API_SECRET") // panics: env variable missing: API_SECRET
 func MustGet(key string) string {
 	val := os.Getenv(key)
 	if val == "" {
@@ -206,21 +369,41 @@ func MustGet(key string) string {
 }
 
 // MustGetInt panics if the value is missing or not an int.
+// @group Typed getters
+// @behavior panic
 //
-// Example:
+// Example: ensure numeric port
 //
-//    port := env.MustGetInt("PORT")
+//	_ = os.Setenv("PORT", "8080")
+//	port := env.MustGetInt("PORT")
+//	godump.Println(port)
 //
+//	// #int 8080
+//
+// Example: panic on bad value
+//
+//	_ = os.Setenv("PORT", "not-a-number")
+//	_ = env.MustGetInt("PORT") // panics when parsing
 func MustGetInt(key string) int {
 	return GetInt(key, "")
 }
 
 // MustGetBool panics if missing or invalid.
+// @group Typed getters
+// @behavior panic
 //
-// Example:
+// Example: gate features explicitly
 //
-//    enabled := env.MustGetBool("FEATURE_ENABLED")
+//	_ = os.Setenv("FEATURE_ENABLED", "true")
+//	enabled := env.MustGetBool("FEATURE_ENABLED")
+//	godump.Println(enabled)
 //
+//	// #bool true
+//
+// Example: panic on invalid value
+//
+//	_ = os.Setenv("FEATURE_ENABLED", "maybe")
+//	_ = env.MustGetBool("FEATURE_ENABLED") // panics when parsing
 func MustGetBool(key string) bool {
 	return GetBool(key, "")
 }
