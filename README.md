@@ -19,7 +19,7 @@
 <p align="center">
   <code>env</code> provides strongly-typed access to environment variables with predictable fallbacks.  
   Eliminate string parsing, centralize app environment checks, and keep configuration boring.  
-  Designed to feel native to Go — and invisible when things are working.
+  Designed to feel native to Go - and invisible when things are working.
 </p>
 
 # Features
@@ -261,7 +261,7 @@ IsContainer detects any container runtime.
 
 IsContainerOS reports whether this OS is *typically* used as a container base.
 
-This does NOT indicate whether you are *inside* a container —
+This does NOT indicate whether you are *inside* a container -
 only that this OS is the kind most often found in container images.
 
 Currently returns true for Linux.
@@ -394,7 +394,7 @@ fmt.Println(env.OS()) // prints: linux
 
 ## Philosophy
 
-**env** is part of the **GoForj toolchain** — a collection of focused, composable packages designed to make building Go applications *satisfying*.
+**env** is part of the **GoForj toolchain** - a collection of focused, composable packages designed to make building Go applications *satisfying*.
 
 No magic. No globals. No surprises.
 
