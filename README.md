@@ -86,7 +86,7 @@ func main() {
     // #bool false
     // #time.Duration 5s
     
-env.Dump("container?", env.IsContainer())
+    env.Dump("container?", env.IsContainer())
     // #string "container?"
     // #bool false
 }
