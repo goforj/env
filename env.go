@@ -38,9 +38,7 @@ func Get(key, fallback string) string {
 
 // GetInt parses an int from an environment variable or fallback string.
 // @group Typed getters
-// @behavior panic
-//
-// Panics if the chosen value cannot be parsed as base-10 int.
+// @behavior readonly
 //
 // Example: fallback used
 //
@@ -58,17 +56,23 @@ func Get(key, fallback string) string {
 //
 //	// #int 8080
 func GetInt(key, fallback string) int {
-	val := Get(key, fallback)
-	ret, err := strconv.Atoi(val)
-	if err != nil {
-		panic(err)
+	val := os.Getenv(key)
+	if val != "" {
+		if ret, err := strconv.Atoi(val); err == nil {
+			return ret
+		}
 	}
-	return ret
+	if fallback != "" {
+		if ret, err := strconv.Atoi(fallback); err == nil {
+			return ret
+		}
+	}
+	return 0
 }
 
 // GetInt64 parses an int64 from an environment variable or fallback string.
 // @group Typed getters
-// @behavior panic
+// @behavior readonly
 //
 // Example: parse large numbers safely
 //
@@ -86,17 +90,23 @@ func GetInt(key, fallback string) int {
 //
 //	// #int64 512
 func GetInt64(key, fallback string) int64 {
-	val := Get(key, fallback)
-	ret, err := strconv.ParseInt(val, 10, 64)
-	if err != nil {
-		panic(err)
+	val := os.Getenv(key)
+	if val != "" {
+		if ret, err := strconv.ParseInt(val, 10, 64); err == nil {
+			return ret
+		}
 	}
-	return ret
+	if fallback != "" {
+		if ret, err := strconv.ParseInt(fallback, 10, 64); err == nil {
+			return ret
+		}
+	}
+	return 0
 }
 
 // GetUint parses a uint from an environment variable or fallback string.
 // @group Typed getters
-// @behavior panic
+// @behavior readonly
 //
 // Example: defaults to fallback when missing
 //
@@ -114,17 +124,23 @@ func GetInt64(key, fallback string) int64 {
 //
 //	// #uint 16
 func GetUint(key, fallback string) uint {
-	val := Get(key, fallback)
-	i, err := strconv.ParseUint(val, 10, 32)
-	if err != nil {
-		panic(err)
+	val := os.Getenv(key)
+	if val != "" {
+		if i, err := strconv.ParseUint(val, 10, 32); err == nil {
+			return uint(i)
+		}
 	}
-	return uint(i)
+	if fallback != "" {
+		if i, err := strconv.ParseUint(fallback, 10, 32); err == nil {
+			return uint(i)
+		}
+	}
+	return 0
 }
 
 // GetUint64 parses a uint64 from an environment variable or fallback string.
 // @group Typed getters
-// @behavior panic
+// @behavior readonly
 //
 // Example: high range values
 //
@@ -142,17 +158,23 @@ func GetUint(key, fallback string) uint {
 //
 //	// #uint64 100
 func GetUint64(key, fallback string) uint64 {
-	val := Get(key, fallback)
-	i, err := strconv.ParseUint(val, 10, 64)
-	if err != nil {
-		panic(err)
+	val := os.Getenv(key)
+	if val != "" {
+		if i, err := strconv.ParseUint(val, 10, 64); err == nil {
+			return i
+		}
 	}
-	return i
+	if fallback != "" {
+		if i, err := strconv.ParseUint(fallback, 10, 64); err == nil {
+			return i
+		}
+	}
+	return 0
 }
 
 // GetFloat parses a float64 from an environment variable or fallback string.
 // @group Typed getters
-// @behavior panic
+// @behavior readonly
 //
 // Example: override threshold
 //
@@ -170,19 +192,25 @@ func GetUint64(key, fallback string) uint64 {
 //
 //	// #float64 0.75
 func GetFloat(key, fallback string) float64 {
-	val := Get(key, fallback)
-	f, err := strconv.ParseFloat(val, 64)
-	if err != nil {
-		panic(err)
+	val := os.Getenv(key)
+	if val != "" {
+		if f, err := strconv.ParseFloat(val, 64); err == nil {
+			return f
+		}
 	}
-	return f
+	if fallback != "" {
+		if f, err := strconv.ParseFloat(fallback, 64); err == nil {
+			return f
+		}
+	}
+	return 0
 }
 
 // GetBool parses a boolean from an environment variable or fallback string.
 // @group Typed getters
-// @behavior panic
+// @behavior readonly
 //
-// Accepted values: true/false, 1/0, t/f (case-insensitive).
+// Accepted values: true/false, 1/0, t/f (case-insensitive). Invalid entries fall back.
 //
 // Example: numeric truthy
 //
@@ -200,17 +228,23 @@ func GetFloat(key, fallback string) float64 {
 //
 //	// #bool false
 func GetBool(key, fallback string) bool {
-	val := Get(key, fallback)
-	ret, err := strconv.ParseBool(val)
-	if err != nil {
-		panic(err)
+	val := os.Getenv(key)
+	if val != "" {
+		if ret, err := strconv.ParseBool(val); err == nil {
+			return ret
+		}
 	}
-	return ret
+	if fallback != "" {
+		if ret, err := strconv.ParseBool(fallback); err == nil {
+			return ret
+		}
+	}
+	return false
 }
 
 // GetDuration parses a Go duration string (e.g. "5s", "10m", "1h").
 // @group Typed getters
-// @behavior panic
+// @behavior readonly
 //
 // Example: override request timeout
 //
@@ -228,12 +262,18 @@ func GetBool(key, fallback string) bool {
 //
 //	// #time.Duration 5s
 func GetDuration(key, fallback string) time.Duration {
-	val := Get(key, fallback)
-	d, err := time.ParseDuration(val)
-	if err != nil {
-		panic(err)
+	val := os.Getenv(key)
+	if val != "" {
+		if d, err := time.ParseDuration(val); err == nil {
+			return d
+		}
 	}
-	return d
+	if fallback != "" {
+		if d, err := time.ParseDuration(fallback); err == nil {
+			return d
+		}
+	}
+	return 0
 }
 
 // GetSlice splits a comma-separated string into a []string with trimming.
@@ -315,9 +355,9 @@ func GetMap(key, fallback string) map[string]string {
 
 // GetEnum ensures the environment variable's value is in the allowed list.
 // @group Typed getters
-// @behavior panic
+// @behavior readonly
 //
-// Panic occurs when the chosen value is not in the allowed slice (case-sensitive).
+// Returns fallback when the environment value is not in the allowed slice.
 //
 // Example: accept only staged environments
 //
@@ -341,7 +381,12 @@ func GetEnum(key, fallback string, allowed []string) string {
 			return val
 		}
 	}
-	panic("env: invalid enum value for " + key + ": " + val)
+	for _, a := range allowed {
+		if fallback == a {
+			return fallback
+		}
+	}
+	return fallback
 }
 
 // MustGet returns the value of key or panics if missing/empty.

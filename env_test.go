@@ -119,39 +119,19 @@ func TestGetEnum(t *testing.T) {
 }
 
 func TestGetEnumInvalid(t *testing.T) {
-	defer func() {
-		if recover() == nil {
-			t.Fatalf("expected panic for invalid enum")
-		}
-	}()
-
 	withEnv("APP_ENV", "invalid", func() {
-		GetEnum("APP_ENV", "dev", []string{"dev", "staging", "prod"})
+		if got := GetEnum("APP_ENV", "dev", []string{"dev", "staging", "prod"}); got != "dev" {
+			t.Fatalf("expected fallback dev, got %q", got)
+		}
 	})
 }
 
-func TestTypedGetters_InvalidPanics(t *testing.T) {
-	cases := []struct {
-		key string
-		val string
-		fn  func()
-	}{
-		{"BAD_INT", "nope", func() { GetInt("BAD_INT", "") }},
-		{"BAD_INT64", "xx", func() { GetInt64("BAD_INT64", "") }},
-		{"BAD_UINT", "-1", func() { GetUint("BAD_UINT", "") }},
-		{"BAD_UINT64", "-1", func() { GetUint64("BAD_UINT64", "") }},
-		{"BAD_FLOAT", "not-float", func() { GetFloat("BAD_FLOAT", "") }},
-		{"BAD_BOOL", "maybe", func() { GetBool("BAD_BOOL", "") }},
-		{"BAD_DURATION", "sometimes", func() { GetDuration("BAD_DURATION", "") }},
-	}
-
-	for _, tt := range cases {
-		t.Run(tt.key, func(t *testing.T) {
-			withEnv(tt.key, tt.val, func() {
-				expectPanic(t, tt.key, tt.fn)
-			})
-		})
-	}
+func TestGetEnumFallbackNotAllowed(t *testing.T) {
+	withEnv("APP_ENV", "unknown", func() {
+		if got := GetEnum("APP_ENV", "invalid-fallback", []string{"dev", "staging"}); got != "invalid-fallback" {
+			t.Fatalf("expected raw fallback when not allowed, got %q", got)
+		}
+	})
 }
 
 func TestSliceAndMapEmptyFallbacks(t *testing.T) {
@@ -201,6 +181,71 @@ func TestMustGetBool(t *testing.T) {
 	withEnv("ENABLED", "true", func() {
 		if !MustGetBool("ENABLED") {
 			t.Fatalf("expected true")
+		}
+	})
+}
+
+func TestGettersReturnFallbackOnBadValues(t *testing.T) {
+	withEnv("BAD_INT", "nope", func() {
+		if got := GetInt("BAD_INT", "10"); got != 10 {
+			t.Fatalf("int fallback expected 10, got %d", got)
+		}
+		if got := GetInt("BAD_INT", ""); got != 0 {
+			t.Fatalf("int fallback expected 0 on bad env+fallback, got %d", got)
+		}
+	})
+
+	withEnv("BAD_INT64", "xx", func() {
+		if got := GetInt64("BAD_INT64", "20"); got != 20 {
+			t.Fatalf("int64 fallback expected 20, got %d", got)
+		}
+		if got := GetInt64("BAD_INT64", ""); got != 0 {
+			t.Fatalf("int64 fallback expected 0 on bad env+fallback, got %d", got)
+		}
+	})
+
+	withEnv("BAD_UINT", "-1", func() {
+		if got := GetUint("BAD_UINT", "7"); got != 7 {
+			t.Fatalf("uint fallback expected 7, got %d", got)
+		}
+		if got := GetUint("BAD_UINT", ""); got != 0 {
+			t.Fatalf("uint fallback expected 0 on bad env+fallback, got %d", got)
+		}
+	})
+
+	withEnv("BAD_UINT64", "-1", func() {
+		if got := GetUint64("BAD_UINT64", "9"); got != 9 {
+			t.Fatalf("uint64 fallback expected 9, got %d", got)
+		}
+		if got := GetUint64("BAD_UINT64", ""); got != 0 {
+			t.Fatalf("uint64 fallback expected 0 on bad env+fallback, got %d", got)
+		}
+	})
+
+	withEnv("BAD_FLOAT", "not-float", func() {
+		if got := GetFloat("BAD_FLOAT", "1.5"); got != 1.5 {
+			t.Fatalf("float fallback expected 1.5, got %f", got)
+		}
+		if got := GetFloat("BAD_FLOAT", ""); got != 0 {
+			t.Fatalf("float fallback expected 0 on bad env+fallback, got %f", got)
+		}
+	})
+
+	withEnv("BAD_BOOL", "maybe", func() {
+		if got := GetBool("BAD_BOOL", "true"); got != true {
+			t.Fatalf("bool fallback expected true, got %v", got)
+		}
+		if got := GetBool("BAD_BOOL", ""); got != false {
+			t.Fatalf("bool fallback expected false on bad env+fallback, got %v", got)
+		}
+	})
+
+	withEnv("BAD_DURATION", "sometimes", func() {
+		if got := GetDuration("BAD_DURATION", "5s"); got != 5*time.Second {
+			t.Fatalf("duration fallback expected 5s, got %v", got)
+		}
+		if got := GetDuration("BAD_DURATION", ""); got != 0 {
+			t.Fatalf("duration fallback expected 0 on bad env+fallback, got %v", got)
 		}
 	})
 }

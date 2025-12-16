@@ -488,7 +488,7 @@ env.Dump(host)
 // #string "db.internal"
 ```
 
-### <a id="getbool"></a>GetBool · panic
+### <a id="getbool"></a>GetBool · readonly
 
 GetBool parses a boolean from an environment variable or fallback string.
 
@@ -512,7 +512,7 @@ env.Dump(debug)
 // #bool false
 ```
 
-### <a id="getduration"></a>GetDuration · panic
+### <a id="getduration"></a>GetDuration · readonly
 
 GetDuration parses a Go duration string (e.g. "5s", "10m", "1h").
 
@@ -536,7 +536,7 @@ env.Dump(timeout)
 // #time.Duration 5s
 ```
 
-### <a id="getenum"></a>GetEnum · panic
+### <a id="getenum"></a>GetEnum · readonly
 
 GetEnum ensures the environment variable's value is in the allowed list.
 
@@ -560,7 +560,7 @@ env.Dump(appEnv)
 // #string "dev"
 ```
 
-### <a id="getfloat"></a>GetFloat · panic
+### <a id="getfloat"></a>GetFloat · readonly
 
 GetFloat parses a float64 from an environment variable or fallback string.
 
@@ -584,7 +584,7 @@ env.Dump(threshold)
 // #float64 0.75
 ```
 
-### <a id="getint"></a>GetInt · panic
+### <a id="getint"></a>GetInt · readonly
 
 GetInt parses an int from an environment variable or fallback string.
 
@@ -608,7 +608,7 @@ env.Dump(port)
 // #int 8080
 ```
 
-### <a id="getint64"></a>GetInt64 · panic
+### <a id="getint64"></a>GetInt64 · readonly
 
 GetInt64 parses an int64 from an environment variable or fallback string.
 
@@ -687,7 +687,7 @@ env.Dump(peers)
 // #[]string []
 ```
 
-### <a id="getuint"></a>GetUint · panic
+### <a id="getuint"></a>GetUint · readonly
 
 GetUint parses a uint from an environment variable or fallback string.
 
@@ -711,7 +711,7 @@ env.Dump(workers)
 // #uint 16
 ```
 
-### <a id="getuint64"></a>GetUint64 · panic
+### <a id="getuint64"></a>GetUint64 · readonly
 
 GetUint64 parses a uint64 from an environment variable or fallback string.
 
