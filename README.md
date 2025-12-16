@@ -58,14 +58,38 @@ Accessing environment variables in Go often leads to:
 go get github.com/goforj/env
 ````
 
-## Usage
+## Quickstart
 
 ```go
-import "github.com/goforj/env"
+package main
 
-port := env.GetInt("PORT", 8080)
-debug := env.GetBool("DEBUG", false)
-timeout := env.GetDuration("REQUEST_TIMEOUT", time.Second*5)
+import (
+	"log"
+	"time"
+
+	"github.com/goforj/env"
+)
+
+func init() {
+	if err := env.LoadEnvFileIfExists(); err != nil {
+		log.Fatalf("load env: %v", err)
+	}
+}
+
+func main() {
+	addr := env.Get("ADDR", "127.0.0.1:8080")
+	debug := env.GetBool("DEBUG", "false")
+	timeout := env.GetDuration("HTTP_TIMEOUT", "5s")
+
+	// use addr, debug, timeout
+	_ = addr
+	_ = debug
+	_ = timeout
+
+	if env.IsContainer() {
+		// container-specific setup
+	}
+}
 ```
 
 ## Environment file loading
@@ -83,6 +107,16 @@ These examples are **generated directly from the documentation blocks** of each 
 An automated test executes **every example** to verify it builds and runs successfully.
 
 This guarantees all examples are valid, up-to-date, and remain functional as the API evolves.
+
+## Container detection at a glance
+
+| Check | True when | Notes |
+|-------|-----------|-------|
+| `IsDocker` | `/.dockerenv` or Docker cgroup markers | Generic Docker container |
+| `IsDockerInDocker` | `/.dockerenv` **and** `docker.sock` | Inner DinD container |
+| `IsDockerHost` | `docker.sock` present, no container cgroups | Host or DinD outer acting as host |
+| `IsContainer` | Any common container signals (Docker, containerd, kube env/cgroup) | General container detection |
+| `IsKubernetes` | `KUBERNETES_SERVICE_HOST` or kubepods cgroup | Inside a Kubernetes pod |
 
 <!-- api:embed:start -->
 
