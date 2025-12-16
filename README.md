@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-    Typed environment variables for Go – safe defaults, app env helpers, and zero-ceremony configuration.
+    Typed environment variables for Go - safe defaults, app env helpers, and zero-ceremony configuration.
 </p>
 
 <p align="center">
@@ -24,14 +24,14 @@
 
 # Features
 
-- 🔐 **Strongly typed getters** – `int`, `bool`, `float`, `duration`, slices, maps
-- 🧯 **Safe fallbacks** – never panic, never accidentally empty
-- 🌎 **Application environment helpers** – `dev`, `local`, `prod`
-- 🧩 **Minimal dependencies** – Pure Go, lightweight, minimal surface area
-- 🧭 **Framework-agnostic** – works with any Go app
-- 📐 **Enum validation** – constrain values with allowed sets
-- 🧼 **Predictable behavior** – no magic, no global state surprises
-- 🧱 **Composable building block** – ideal for config structs and startup wiring
+- 🔐 **Strongly typed getters** - `int`, `bool`, `float`, `duration`, slices, maps
+- 🧯 **Safe fallbacks** - never panic, never accidentally empty
+- 🌎 **Application environment helpers** - `dev`, `local`, `prod`
+- 🧩 **Minimal dependencies** - Pure Go, lightweight, minimal surface area
+- 🧭 **Framework-agnostic** - works with any Go app
+- 📐 **Enum validation** - constrain values with allowed sets
+- 🧼 **Predictable behavior** - no magic, no global state surprises
+- 🧱 **Composable building block** - ideal for config structs and startup wiring
 
 ## Why env?
 
