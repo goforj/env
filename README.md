@@ -77,20 +77,24 @@ func init() {
 }
 
 func main() {
-	addr := env.Get("ADDR", "127.0.0.1:8080")
-	debug := env.GetBool("DEBUG", "false")
-	timeout := env.GetDuration("HTTP_TIMEOUT", "5s")
-
-	// use addr, debug, timeout
-	_ = addr
-	_ = debug
-	_ = timeout
-
-	if env.IsContainer() {
-		// container-specific setup
-	}
+    addr := env.Get("ADDR", "127.0.0.1:8080")
+    debug := env.GetBool("DEBUG", "false")
+    timeout := env.GetDuration("HTTP_TIMEOUT", "5s")
+    
+    env.Dump(addr, debug, timeout)
+    // #string "127.0.0.1:8080"
+    // #bool false
+    // #time.Duration 5s
+    
+env.Dump("container?", env.IsContainer())
+    // #string "container?"
+    // #bool false
 }
 ```
+
+### Full kitchen-sink example
+
+See [examples/kitchensink/main.go](examples/kitchensink/main.go) for a runnable program that exercises almost every helper (env loading, typed getters, must-getters, runtime + container detection, and the `env.Dump` wrapper) with deterministic godump output.
 
 ## Environment file loading
 
