@@ -30,6 +30,7 @@ var envLoaded = false
 // Behavior:
 //   - Sets APP_ENV=local on macOS/Windows when unset.
 //   - Chooses .env.testing when APP_ENV indicates tests (or Go test flags are present).
+//   - Loads .env first when present; .env.testing overlays in testing.
 //   - Loads .env.host for host-to-container networking when running on the host or DinD.
 //   - Idempotent: subsequent calls no-op after the first load.
 //
@@ -55,38 +56,42 @@ var envLoaded = false
 func LoadEnvFileIfExists() error {
 	_ = os.Setenv("APP_ENV", Local)
 
-	if !envLoaded {
-		// use dev or testing envs depending on the environment
-		envLoadMsg := ""
-		envFile := fileEnv
-		if IsAppEnvTesting() {
-			envFile = envFileTesting
-		}
+	// avoid re-loading env files
+	if envLoaded {
+		return nil
+	}
 
-		// load top-level .env
-		if loadEnvFile(envFile) {
-			envLoadMsg = fmt.Sprintf("[LoadEnv] APP_ENV [%v] ENV_FILE [%v]", os.Getenv("APP_ENV"), envFile)
-		}
+	// load base env first; layer testing/host overrides afterward
+	var loadedFiles []string
 
-		// display env: [LoadEnv] APP_ENV [local] ENV_FILE [.env]
-		if GetInt("APP_DEBUG", "0") >= 3 {
-			fmt.Println(envLoadMsg)
-		}
+	// load top-level .env
+	if ok, path := loadEnvFile(fileEnv); ok {
+		loadedFiles = append(loadedFiles, path)
+	}
 
-		envLoaded = true
-
-		// search for global .env.host
-		// we're likely talking from host -> container network
-		// used from IDEs
-		if IsHostEnvironment() || IsDockerInDocker() {
-			env := fileEnvHost
-			if loadEnvFile(env) {
-				if GetInt("APP_DEBUG", "0") > 0 {
-					fmt.Println(fmt.Sprintf("Loaded environment [env] APP_ENV [%v] ENV_FILE [%v]", os.Getenv("APP_ENV"), env))
-				}
-			}
+	// search for global .env.host
+	// we're likely talking from host -> container network
+	// used from IDEs
+	if IsHostEnvironment() || IsDockerInDocker() {
+		if ok, path := loadEnvFile(fileEnvHost); ok {
+			loadedFiles = append(loadedFiles, path)
 		}
 	}
+
+	// use dev or testing envs depending on the environment
+	if IsAppEnvTesting() {
+		if ok, path := loadEnvFile(envFileTesting); ok {
+			loadedFiles = append(loadedFiles, path)
+		}
+	}
+
+	// display loaded env files
+	if GetInt("APP_DEBUG", "0") >= 3 {
+		printLoadedEnvFiles(loadedFiles)
+	}
+
+	// mark as loaded
+	envLoaded = true
 
 	return nil
 }
@@ -107,7 +112,7 @@ func IsEnvLoaded() bool {
 
 // searches for .env file through directory traversal
 // loads .env file if found
-func loadEnvFile(envFile string) bool {
+func loadEnvFile(envFile string) (bool, string) {
 	var path string
 	found := false
 	for i := 0; i < MaxDirectorySeekLevels; i++ {
@@ -125,5 +130,31 @@ func loadEnvFile(envFile string) bool {
 		}
 	}
 
-	return found
+	return found, path
+}
+
+// ANSI color codes
+const (
+	colorGray  = "\033[90m"
+	colorReset = "\033[0m"
+)
+
+// debugMark returns a gray dot symbol for debug output.
+func debugMark() string {
+	return colorMark(colorGray, "·")
+}
+
+// colorMark wraps a symbol in the provided ANSI color.
+func colorMark(color, symbol string) string {
+	return fmt.Sprintf("%s%s%s", color, symbol, colorReset)
+}
+
+// printLoadedEnvFiles outputs loaded env files to stdout
+func printLoadedEnvFiles(paths []string) {
+	if len(paths) == 0 {
+		return
+	}
+	for _, path := range paths {
+		fmt.Printf(" %s .env file loader · env [%v] file [%v]\n", debugMark(), os.Getenv("APP_ENV"), path)
+	}
 }

@@ -8,11 +8,15 @@ import (
 func TestLoadEnvFileIfExists_testingEnv(t *testing.T) {
 	tempDir := t.TempDir()
 	dotEnvFile := tempDir + "/.env.testing"
+	baseEnvFile := tempDir + "/.env"
 
 	// Write mock .env.testing
 	err := os.WriteFile(dotEnvFile, []byte("FAKE_ENV_TESTING=testing_value\nAPP_DEBUG=0"), 0644)
 	if err != nil {
 		t.Fatalf("Failed to create temp .env.testing: %v", err)
+	}
+	if err := os.WriteFile(baseEnvFile, []byte("FAKE_ENV_BASE=base_value\nFAKE_ENV_TESTING=base_override\n"), 0644); err != nil {
+		t.Fatalf("Failed to create temp .env: %v", err)
 	}
 
 	// Save original working dir to restore later
@@ -41,6 +45,10 @@ func TestLoadEnvFileIfExists_testingEnv(t *testing.T) {
 	val := os.Getenv("FAKE_ENV_TESTING")
 	if val != "testing_value" {
 		t.Errorf("Expected FAKE_ENV_TESTING to be 'testing_value', got %s", val)
+	}
+	baseVal := os.Getenv("FAKE_ENV_BASE")
+	if baseVal != "base_value" {
+		t.Errorf("Expected FAKE_ENV_BASE to be 'base_value', got %s", baseVal)
 	}
 
 	if !IsEnvLoaded() {
@@ -106,7 +114,7 @@ func TestLoadEnvFileIfExists_WithDotEnvHostBranch(t *testing.T) {
 }
 
 func TestLoadEnvFile_NotFound(t *testing.T) {
-	if loadEnvFile("does-not-exist") {
+	if ok, _ := loadEnvFile("does-not-exist"); ok {
 		t.Fatalf("expected false when file missing")
 	}
 }

@@ -24,14 +24,14 @@
 
 # Features
 
-- 🔐 **Strongly typed getters** - `int`, `bool`, `float`, `duration`, slices, maps
-- 🧯 **Safe fallbacks** - never panic, never accidentally empty
-- 🌎 **Application environment helpers** - `dev`, `local`, `prod`
-- 🧩 **Minimal dependencies** - Pure Go, lightweight, minimal surface area
-- 🧭 **Framework-agnostic** - works with any Go app
-- 📐 **Enum validation** - constrain values with allowed sets
-- 🧼 **Predictable behavior** - no magic, no global state surprises
-- 🧱 **Composable building block** - ideal for config structs and startup wiring
+- **Strongly typed getters** - `int`, `bool`, `float`, `duration`, slices, maps
+- **Safe fallbacks** - never panic, never accidentally empty
+- **Application environment helpers** - `dev`, `local`, `prod`
+- **Minimal dependencies** - Pure Go, lightweight, minimal surface area
+- **Framework-agnostic** - works with any Go app
+- **Enum validation** - constrain values with allowed sets
+- **Predictable behavior** - no magic, no global state surprises
+- **Composable building block** - ideal for config structs and startup wiring
 
 ## Why env?
 
@@ -379,12 +379,13 @@ env.Dump(env.IsEnvLoaded())
 
 ### <a id="loadenvfileifexists"></a>LoadEnvFileIfExists · mutates-process-env
 
-LoadEnvFileIfExists loads .env/.env.testing/.env.host when present.
+LoadEnvFileIfExists loads .env/.env.testing/.env.host when present (.env first, .env.testing overlays during tests).
 
 _Example: test-specific env file_
 
 ```go
 tmp, _ := os.MkdirTemp("", "envdoc")
+_ = os.WriteFile(filepath.Join(tmp, ".env"), []byte("PORT=8080\nAPP_DEBUG=0"), 0o644)
 _ = os.WriteFile(filepath.Join(tmp, ".env.testing"), []byte("PORT=9090\nAPP_DEBUG=0"), 0o644)
 _ = os.Chdir(tmp)
 _ = os.Setenv("APP_ENV", env.Testing)
