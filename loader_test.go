@@ -1,7 +1,9 @@
 package env
 
 import (
+	"io"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -130,4 +132,51 @@ func TestLoadEnvFile_PanicsOnBadFile(t *testing.T) {
 	expectPanic(t, "loadEnvFile panic", func() {
 		loadEnvFile(".env.testing")
 	})
+}
+
+func TestPrintLoadedEnvFiles_NoPaths(t *testing.T) {
+	output := captureStdout(t, func() {
+		printLoadedEnvFiles(nil)
+	})
+	if output != "" {
+		t.Fatalf("expected no output, got %q", output)
+	}
+}
+
+func TestPrintLoadedEnvFiles_WithPaths(t *testing.T) {
+	t.Setenv("APP_ENV", Testing)
+	output := captureStdout(t, func() {
+		printLoadedEnvFiles([]string{"./.env", "./.env.testing"})
+	})
+	if !strings.Contains(output, "env [testing]") {
+		t.Fatalf("expected output to include APP_ENV, got %q", output)
+	}
+	if !strings.Contains(output, "file [./.env]") || !strings.Contains(output, "file [./.env.testing]") {
+		t.Fatalf("expected output to include paths, got %q", output)
+	}
+}
+
+func captureStdout(t *testing.T, fn func()) string {
+	t.Helper()
+	original := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("pipe: %v", err)
+	}
+	os.Stdout = w
+	defer func() {
+		os.Stdout = original
+	}()
+
+	done := make(chan string)
+	go func() {
+		var buf strings.Builder
+		_, _ = io.Copy(&buf, r)
+		done <- buf.String()
+	}()
+
+	fn()
+	_ = w.Close()
+	output := <-done
+	return output
 }
