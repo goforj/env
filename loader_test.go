@@ -1,18 +1,24 @@
 package env
 
 import (
+	"io"
 	"os"
+	"strings"
 	"testing"
 )
 
 func TestLoadEnvFileIfExists_testingEnv(t *testing.T) {
 	tempDir := t.TempDir()
 	dotEnvFile := tempDir + "/.env.testing"
+	baseEnvFile := tempDir + "/.env"
 
 	// Write mock .env.testing
 	err := os.WriteFile(dotEnvFile, []byte("FAKE_ENV_TESTING=testing_value\nAPP_DEBUG=0"), 0644)
 	if err != nil {
 		t.Fatalf("Failed to create temp .env.testing: %v", err)
+	}
+	if err := os.WriteFile(baseEnvFile, []byte("FAKE_ENV_BASE=base_value\nFAKE_ENV_TESTING=base_override\n"), 0644); err != nil {
+		t.Fatalf("Failed to create temp .env: %v", err)
 	}
 
 	// Save original working dir to restore later
@@ -41,6 +47,10 @@ func TestLoadEnvFileIfExists_testingEnv(t *testing.T) {
 	val := os.Getenv("FAKE_ENV_TESTING")
 	if val != "testing_value" {
 		t.Errorf("Expected FAKE_ENV_TESTING to be 'testing_value', got %s", val)
+	}
+	baseVal := os.Getenv("FAKE_ENV_BASE")
+	if baseVal != "base_value" {
+		t.Errorf("Expected FAKE_ENV_BASE to be 'base_value', got %s", baseVal)
 	}
 
 	if !IsEnvLoaded() {
@@ -106,7 +116,7 @@ func TestLoadEnvFileIfExists_WithDotEnvHostBranch(t *testing.T) {
 }
 
 func TestLoadEnvFile_NotFound(t *testing.T) {
-	if loadEnvFile("does-not-exist") {
+	if ok, _ := loadEnvFile("does-not-exist"); ok {
 		t.Fatalf("expected false when file missing")
 	}
 }
@@ -122,4 +132,51 @@ func TestLoadEnvFile_PanicsOnBadFile(t *testing.T) {
 	expectPanic(t, "loadEnvFile panic", func() {
 		loadEnvFile(".env.testing")
 	})
+}
+
+func TestPrintLoadedEnvFiles_NoPaths(t *testing.T) {
+	output := captureStdout(t, func() {
+		printLoadedEnvFiles(nil)
+	})
+	if output != "" {
+		t.Fatalf("expected no output, got %q", output)
+	}
+}
+
+func TestPrintLoadedEnvFiles_WithPaths(t *testing.T) {
+	t.Setenv("APP_ENV", Testing)
+	output := captureStdout(t, func() {
+		printLoadedEnvFiles([]string{"./.env", "./.env.testing"})
+	})
+	if !strings.Contains(output, "env [testing]") {
+		t.Fatalf("expected output to include APP_ENV, got %q", output)
+	}
+	if !strings.Contains(output, "file [./.env]") || !strings.Contains(output, "file [./.env.testing]") {
+		t.Fatalf("expected output to include paths, got %q", output)
+	}
+}
+
+func captureStdout(t *testing.T, fn func()) string {
+	t.Helper()
+	original := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("pipe: %v", err)
+	}
+	os.Stdout = w
+	defer func() {
+		os.Stdout = original
+	}()
+
+	done := make(chan string)
+	go func() {
+		var buf strings.Builder
+		_, _ = io.Copy(&buf, r)
+		done <- buf.String()
+	}()
+
+	fn()
+	_ = w.Close()
+	output := <-done
+	return output
 }
