@@ -10,11 +10,11 @@ import (
 )
 
 func main() {
-	// LoadEnvFileIfExists loads .env/.env.testing/.env.host when present.
+	// LoadEnvFileIfExists loads .env with optional layering for .env.local/.env.staging/.env.production,
+	// plus .env.testing/.env.host when present.
 
 	// Example: test-specific env file
 	tmp, _ := os.MkdirTemp("", "envdoc")
-	_ = os.WriteFile(filepath.Join(tmp, ".env"), []byte("PORT=8080\nAPP_DEBUG=0"), 0o644)
 	_ = os.WriteFile(filepath.Join(tmp, ".env.testing"), []byte("PORT=9090\nAPP_DEBUG=0"), 0o644)
 	_ = os.Chdir(tmp)
 	_ = os.Setenv("APP_ENV", env.Testing)

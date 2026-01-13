@@ -122,13 +122,24 @@ This guarantees all examples are valid, up-to-date, and remain functional as the
 | `IsContainer` | Any common container signals (Docker, containerd, kube env/cgroup) | General container detection |
 | `IsKubernetes` | `KUBERNETES_SERVICE_HOST` or kubepods cgroup | Inside a Kubernetes pod |
 
+## Environment loading overview
+
+LoadEnvFileIfExists layers env files in a predictable order:
+
+- `.env` is loaded first.
+- `.env.local`, `.env.staging`, or `.env.production` overlays based on `APP_ENV` (defaults to `local` when unset).
+- `.env.testing` overlays when running under tests (APP_ENV=testing or Go test markers).
+- `.env.host` overlays when running on the host or DinD to support host-to-container networking.
+
+Later files override earlier values. Subsequent calls are no-ops.
+
 <!-- api:embed:start -->
 
 ### Index
 
 | Group | Functions |
 |------:|-----------|
-| **Application environment** | [GetAppEnv](#getappenv) [IsAppEnv](#isappenv) [IsAppEnvDev](#isappenvdev) [IsAppEnvLocal](#isappenvlocal) [IsAppEnvLocalOrStaging](#isappenvlocalorstaging) [IsAppEnvProduction](#isappenvproduction) [IsAppEnvStaging](#isappenvstaging) [IsAppEnvTesting](#isappenvtesting) [IsAppEnvTestingOrLocal](#isappenvtestingorlocal) |
+| **Application environment** | [GetAppEnv](#getappenv) [IsAppEnv](#isappenv) [IsAppEnvDev](#isappenvdev) [IsAppEnvLocal](#isappenvlocal) [IsAppEnvLocalOrStaging](#isappenvlocalorstaging) [IsAppEnvProduction](#isappenvproduction) [IsAppEnvStaging](#isappenvstaging) [IsAppEnvTesting](#isappenvtesting) [IsAppEnvTestingOrLocal](#isappenvtestingorlocal) [SetAppEnv](#setappenv) [SetAppEnvDev](#setappenvdev) [SetAppEnvLocal](#setappenvlocal) [SetAppEnvProduction](#setappenvproduction) [SetAppEnvStaging](#setappenvstaging) [SetAppEnvTesting](#setappenvtesting) |
 | **Container detection** | [IsContainer](#iscontainer) [IsDocker](#isdocker) [IsDockerHost](#isdockerhost) [IsDockerInDocker](#isdockerindocker) [IsHostEnvironment](#ishostenvironment) [IsKubernetes](#iskubernetes) |
 | **Debugging** | [Dump](#dump) |
 | **Environment loading** | [IsEnvLoaded](#isenvloaded) [LoadEnvFileIfExists](#loadenvfileifexists) |
@@ -261,6 +272,74 @@ env.Dump(env.IsAppEnvTestingOrLocal())
 // #bool true
 ```
 
+### <a id="setappenv"></a>SetAppEnv · mutates-process-env
+
+SetAppEnv sets APP_ENV to a supported value.
+
+_Example: set a supported environment_
+
+```go
+_ = env.SetAppEnv(env.Staging)
+env.Dump(env.GetAppEnv())
+
+// #string "staging"
+```
+
+### <a id="setappenvdev"></a>SetAppEnvDev · mutates-process-env
+
+SetAppEnvDev sets APP_ENV to "dev".
+
+```go
+_ = env.SetAppEnvDev()
+env.Dump(env.GetAppEnv())
+
+// #string "dev"
+```
+
+### <a id="setappenvlocal"></a>SetAppEnvLocal · mutates-process-env
+
+SetAppEnvLocal sets APP_ENV to "local".
+
+```go
+_ = env.SetAppEnvLocal()
+env.Dump(env.GetAppEnv())
+
+// #string "local"
+```
+
+### <a id="setappenvproduction"></a>SetAppEnvProduction · mutates-process-env
+
+SetAppEnvProduction sets APP_ENV to "production".
+
+```go
+_ = env.SetAppEnvProduction()
+env.Dump(env.GetAppEnv())
+
+// #string "production"
+```
+
+### <a id="setappenvstaging"></a>SetAppEnvStaging · mutates-process-env
+
+SetAppEnvStaging sets APP_ENV to "staging".
+
+```go
+_ = env.SetAppEnvStaging()
+env.Dump(env.GetAppEnv())
+
+// #string "staging"
+```
+
+### <a id="setappenvtesting"></a>SetAppEnvTesting · mutates-process-env
+
+SetAppEnvTesting sets APP_ENV to "testing".
+
+```go
+_ = env.SetAppEnvTesting()
+env.Dump(env.GetAppEnv())
+
+// #string "testing"
+```
+
 ## Container detection
 
 ### <a id="iscontainer"></a>IsContainer · readonly
@@ -379,13 +458,13 @@ env.Dump(env.IsEnvLoaded())
 
 ### <a id="loadenvfileifexists"></a>LoadEnvFileIfExists · mutates-process-env
 
-LoadEnvFileIfExists loads .env/.env.testing/.env.host when present (.env first, .env.testing overlays during tests).
+LoadEnvFileIfExists loads .env with optional layering for .env.local/.env.staging/.env.production,
+plus .env.testing/.env.host when present.
 
 _Example: test-specific env file_
 
 ```go
 tmp, _ := os.MkdirTemp("", "envdoc")
-_ = os.WriteFile(filepath.Join(tmp, ".env"), []byte("PORT=8080\nAPP_DEBUG=0"), 0o644)
 _ = os.WriteFile(filepath.Join(tmp, ".env.testing"), []byte("PORT=9090\nAPP_DEBUG=0"), 0o644)
 _ = os.Chdir(tmp)
 _ = os.Setenv("APP_ENV", env.Testing)
