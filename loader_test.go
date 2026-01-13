@@ -156,6 +156,170 @@ func TestPrintLoadedEnvFiles_WithPaths(t *testing.T) {
 	}
 }
 
+func TestEnvFileForAppEnv(t *testing.T) {
+	cases := map[string]string{
+		Local:      ".env.local",
+		Staging:    ".env.staging",
+		Production: ".env.production",
+	}
+
+	for appEnv, expected := range cases {
+		t.Run(appEnv, func(t *testing.T) {
+			got, ok := envFileForAppEnv(appEnv)
+			if !ok {
+				t.Fatalf("expected env file for %s", appEnv)
+			}
+			if got != expected {
+				t.Fatalf("expected %s, got %s", expected, got)
+			}
+		})
+	}
+
+	if _, ok := envFileForAppEnv(Testing); ok {
+		t.Fatalf("expected no env file for %s", Testing)
+	}
+	if _, ok := envFileForAppEnv("unknown"); ok {
+		t.Fatalf("expected no env file for unknown")
+	}
+}
+
+func TestLoadEnvFileIfExists_LayeredLocal(t *testing.T) {
+	wd, _ := os.Getwd()
+	t.Cleanup(func() {
+		envLoaded = false
+		_ = os.Chdir(wd)
+	})
+
+	tmp := t.TempDir()
+	if err := os.WriteFile(tmp+"/.env", []byte("BASE=base\nLAYER=base\n"), 0o644); err != nil {
+		t.Fatalf("write .env: %v", err)
+	}
+	if err := os.WriteFile(tmp+"/.env.local", []byte("LAYER=local\nLOCAL_ONLY=1\n"), 0o644); err != nil {
+		t.Fatalf("write .env.local: %v", err)
+	}
+
+	_ = os.Chdir(tmp)
+	_ = os.Setenv("APP_ENV", Local)
+	envLoaded = false
+
+	if err := LoadEnvFileIfExists(); err != nil {
+		t.Fatalf("LoadEnvFileIfExists: %v", err)
+	}
+	if got := os.Getenv("LAYER"); got != "local" {
+		t.Fatalf("expected LAYER to be local, got %q", got)
+	}
+	if got := os.Getenv("LOCAL_ONLY"); got != "1" {
+		t.Fatalf("expected LOCAL_ONLY to be set, got %q", got)
+	}
+	if got := os.Getenv("BASE"); got != "base" {
+		t.Fatalf("expected BASE to be base, got %q", got)
+	}
+}
+
+func TestLoadEnvFileIfExists_LayeredStaging(t *testing.T) {
+	wd, _ := os.Getwd()
+	t.Cleanup(func() {
+		envLoaded = false
+		_ = os.Chdir(wd)
+	})
+
+	tmp := t.TempDir()
+	if err := os.WriteFile(tmp+"/.env", []byte("SHARED=base\n"), 0o644); err != nil {
+		t.Fatalf("write .env: %v", err)
+	}
+	if err := os.WriteFile(tmp+"/.env.staging", []byte("SHARED=staging\nSTAGING_ONLY=1\n"), 0o644); err != nil {
+		t.Fatalf("write .env.staging: %v", err)
+	}
+
+	_ = os.Chdir(tmp)
+	_ = os.Setenv("APP_ENV", Staging)
+	envLoaded = false
+
+	if err := LoadEnvFileIfExists(); err != nil {
+		t.Fatalf("LoadEnvFileIfExists: %v", err)
+	}
+	if got := os.Getenv("SHARED"); got != "staging" {
+		t.Fatalf("expected SHARED to be staging, got %q", got)
+	}
+	if got := os.Getenv("STAGING_ONLY"); got != "1" {
+		t.Fatalf("expected STAGING_ONLY to be set, got %q", got)
+	}
+}
+
+func TestLoadEnvFileIfExists_LayeredProduction(t *testing.T) {
+	wd, _ := os.Getwd()
+	t.Cleanup(func() {
+		envLoaded = false
+		_ = os.Chdir(wd)
+	})
+
+	tmp := t.TempDir()
+	if err := os.WriteFile(tmp+"/.env", []byte("SHARED=base\n"), 0o644); err != nil {
+		t.Fatalf("write .env: %v", err)
+	}
+	if err := os.WriteFile(tmp+"/.env.production", []byte("SHARED=prod\nPROD_ONLY=1\n"), 0o644); err != nil {
+		t.Fatalf("write .env.production: %v", err)
+	}
+
+	_ = os.Chdir(tmp)
+	_ = os.Setenv("APP_ENV", Production)
+	envLoaded = false
+
+	if err := LoadEnvFileIfExists(); err != nil {
+		t.Fatalf("LoadEnvFileIfExists: %v", err)
+	}
+	if got := os.Getenv("SHARED"); got != "prod" {
+		t.Fatalf("expected SHARED to be prod, got %q", got)
+	}
+	if got := os.Getenv("PROD_ONLY"); got != "1" {
+		t.Fatalf("expected PROD_ONLY to be set, got %q", got)
+	}
+}
+
+func TestLoadEnvFileIfExists_NoReload(t *testing.T) {
+	wd, _ := os.Getwd()
+	t.Cleanup(func() {
+		envLoaded = false
+		_ = os.Chdir(wd)
+	})
+
+	tmp := t.TempDir()
+	if err := os.WriteFile(tmp+"/.env", []byte("SHOULD_NOT_LOAD=1\n"), 0o644); err != nil {
+		t.Fatalf("write .env: %v", err)
+	}
+
+	_ = os.Chdir(tmp)
+	envLoaded = true
+
+	if err := LoadEnvFileIfExists(); err != nil {
+		t.Fatalf("LoadEnvFileIfExists: %v", err)
+	}
+	if got := os.Getenv("SHOULD_NOT_LOAD"); got != "" {
+		t.Fatalf("expected SHOULD_NOT_LOAD to remain unset, got %q", got)
+	}
+}
+
+func TestLoadEnvFileIfExists_DefaultsAppEnv(t *testing.T) {
+	wd, _ := os.Getwd()
+	t.Cleanup(func() {
+		envLoaded = false
+		_ = os.Chdir(wd)
+		_ = os.Unsetenv("APP_ENV")
+	})
+
+	tmp := t.TempDir()
+	_ = os.Chdir(tmp)
+	_ = os.Unsetenv("APP_ENV")
+	envLoaded = false
+
+	if err := LoadEnvFileIfExists(); err != nil {
+		t.Fatalf("LoadEnvFileIfExists: %v", err)
+	}
+	if got := os.Getenv("APP_ENV"); got != Local {
+		t.Fatalf("expected APP_ENV to default to %s, got %q", Local, got)
+	}
+}
+
 func captureStdout(t *testing.T, fn func()) string {
 	t.Helper()
 	original := os.Stdout

@@ -2,6 +2,7 @@ package env
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"strings"
 )
@@ -176,4 +177,102 @@ func IsAppEnvDev() bool {
 //	// #bool true
 func IsAppEnvTestingOrLocal() bool {
 	return IsAppEnv(Testing, Local)
+}
+
+// SetAppEnv sets APP_ENV to a supported value.
+// @group Application environment
+// @behavior mutates-process-env
+//
+// Returns an error when the environment is unsupported.
+//
+// Example: set a supported environment
+//
+//	_ = env.SetAppEnv(env.Staging)
+//	env.Dump(env.GetAppEnv())
+//
+//	// #string "staging"
+func SetAppEnv(appEnv string) error {
+	if !isValidAppEnv(appEnv) {
+		return fmt.Errorf("invalid APP_ENV: %s", appEnv)
+	}
+	return os.Setenv("APP_ENV", appEnv)
+}
+
+// SetAppEnvLocal sets APP_ENV to "local".
+// @group Application environment
+// @behavior mutates-process-env
+//
+// Example:
+//
+//	_ = env.SetAppEnvLocal()
+//	env.Dump(env.GetAppEnv())
+//
+//	// #string "local"
+func SetAppEnvLocal() error {
+	return SetAppEnv(Local)
+}
+
+// SetAppEnvDev sets APP_ENV to "dev".
+// @group Application environment
+// @behavior mutates-process-env
+//
+// Example:
+//
+//	_ = env.SetAppEnvDev()
+//	env.Dump(env.GetAppEnv())
+//
+//	// #string "dev"
+func SetAppEnvDev() error {
+	return SetAppEnv(Dev)
+}
+
+// SetAppEnvStaging sets APP_ENV to "staging".
+// @group Application environment
+// @behavior mutates-process-env
+//
+// Example:
+//
+//	_ = env.SetAppEnvStaging()
+//	env.Dump(env.GetAppEnv())
+//
+//	// #string "staging"
+func SetAppEnvStaging() error {
+	return SetAppEnv(Staging)
+}
+
+// SetAppEnvProduction sets APP_ENV to "production".
+// @group Application environment
+// @behavior mutates-process-env
+//
+// Example:
+//
+//	_ = env.SetAppEnvProduction()
+//	env.Dump(env.GetAppEnv())
+//
+//	// #string "production"
+func SetAppEnvProduction() error {
+	return SetAppEnv(Production)
+}
+
+// SetAppEnvTesting sets APP_ENV to "testing".
+// @group Application environment
+// @behavior mutates-process-env
+//
+// Example:
+//
+//	_ = env.SetAppEnvTesting()
+//	env.Dump(env.GetAppEnv())
+//
+//	// #string "testing"
+func SetAppEnvTesting() error {
+	return SetAppEnv(Testing)
+}
+
+func isValidAppEnv(appEnv string) bool {
+	switch appEnv {
+	case Testing, Local, Dev, Staging, Production:
+		return true
+	default:
+		return false
+	}
 }

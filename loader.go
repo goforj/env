@@ -18,19 +18,23 @@ const (
 	fileEnv        = ".env"
 	fileEnvHost    = ".env.host"
 	envFileTesting = ".env.testing"
+	envFileLocal   = ".env.local"
+	envFileStaging = ".env.staging"
+	envFileProd    = ".env.production"
 )
 
 // envLoaded is a flag to check if the environment file has been loaded
 var envLoaded = false
 
-// LoadEnvFileIfExists loads .env/.env.testing/.env.host when present.
+// LoadEnvFileIfExists loads .env with optional layering for .env.local/.env.staging/.env.production,
+// plus .env.testing/.env.host when present.
 // @group Environment loading
 // @behavior mutates-process-env
 //
 // Behavior:
-//   - Sets APP_ENV=local on macOS/Windows when unset.
+//   - Sets APP_ENV=local when unset.
 //   - Chooses .env.testing when APP_ENV indicates tests (or Go test flags are present).
-//   - Loads .env first when present; .env.testing overlays in testing.
+//   - Loads .env first when present; .env.<app-env> overlays for local/staging/production.
 //   - Loads .env.host for host-to-container networking when running on the host or DinD.
 //   - Idempotent: subsequent calls no-op after the first load.
 //
@@ -54,7 +58,9 @@ var envLoaded = false
 //
 //	// #string "api"
 func LoadEnvFileIfExists() error {
-	_ = os.Setenv("APP_ENV", Local)
+	if os.Getenv("APP_ENV") == "" {
+		_ = os.Setenv("APP_ENV", Local)
+	}
 
 	// avoid re-loading env files
 	if envLoaded {
@@ -69,6 +75,12 @@ func LoadEnvFileIfExists() error {
 		loadedFiles = append(loadedFiles, path)
 	}
 
+	if envFile, ok := envFileForAppEnv(os.Getenv("APP_ENV")); ok {
+		if ok, path := loadEnvFile(envFile); ok {
+			loadedFiles = append(loadedFiles, path)
+		}
+	}
+
 	// search for global .env.host
 	// we're likely talking from host -> container network
 	// used from IDEs
@@ -78,7 +90,7 @@ func LoadEnvFileIfExists() error {
 		}
 	}
 
-	// use dev or testing envs depending on the environment
+	// use testing envs when the environment indicates tests
 	if IsAppEnvTesting() {
 		if ok, path := loadEnvFile(envFileTesting); ok {
 			loadedFiles = append(loadedFiles, path)
@@ -94,6 +106,20 @@ func LoadEnvFileIfExists() error {
 	envLoaded = true
 
 	return nil
+}
+
+// envFileForAppEnv returns the layered env filename for the given APP_ENV.
+func envFileForAppEnv(appEnv string) (string, bool) {
+	switch appEnv {
+	case Local:
+		return envFileLocal, true
+	case Staging:
+		return envFileStaging, true
+	case Production:
+		return envFileProd, true
+	default:
+		return "", false
+	}
 }
 
 // IsEnvLoaded reports whether LoadEnvFileIfExists was executed in this process.
