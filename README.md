@@ -26,7 +26,7 @@
 
 - **Strongly typed getters** - `int`, `bool`, `float`, `duration`, slices, maps
 - **Safe fallbacks** - never panic, never accidentally empty
-- **Application environment helpers** - `dev`, `local`, `prod`
+- **Application environment helpers** - `local`, `staging`, `production`
 - **Minimal dependencies** - Pure Go, lightweight, minimal surface area
 - **Framework-agnostic** - works with any Go app
 - **Enum validation** - constrain values with allowed sets
@@ -48,7 +48,7 @@ Accessing environment variables in Go often leads to:
 
 - Strongly typed getters (`int`, `bool`, `duration`, slices, maps)
 - Safe fallbacks (never panic, never empty by accident)
-- App environment helpers (`dev`, `local`, `prod`)
+- App environment helpers (`local`, `staging`, `production`)
 - Zero dependencies
 - Framework-agnostic
 
@@ -139,7 +139,7 @@ Later files override earlier values. Subsequent calls are no-ops.
 
 | Group | Functions |
 |------:|-----------|
-| **Application environment** | [GetAppEnv](#getappenv) [IsAppEnv](#isappenv) [IsAppEnvDev](#isappenvdev) [IsAppEnvLocal](#isappenvlocal) [IsAppEnvLocalOrStaging](#isappenvlocalorstaging) [IsAppEnvProduction](#isappenvproduction) [IsAppEnvStaging](#isappenvstaging) [IsAppEnvTesting](#isappenvtesting) [IsAppEnvTestingOrLocal](#isappenvtestingorlocal) [SetAppEnv](#setappenv) [SetAppEnvDev](#setappenvdev) [SetAppEnvLocal](#setappenvlocal) [SetAppEnvProduction](#setappenvproduction) [SetAppEnvStaging](#setappenvstaging) [SetAppEnvTesting](#setappenvtesting) |
+| **Application environment** | [GetAppEnv](#getappenv) [IsAppEnv](#isappenv) [IsAppEnvLocal](#isappenvlocal) [IsAppEnvLocalOrStaging](#isappenvlocalorstaging) [IsAppEnvProduction](#isappenvproduction) [IsAppEnvStaging](#isappenvstaging) [IsAppEnvTesting](#isappenvtesting) [IsAppEnvTestingOrLocal](#isappenvtestingorlocal) [SetAppEnv](#setappenv) [SetAppEnvLocal](#setappenvlocal) [SetAppEnvProduction](#setappenvproduction) [SetAppEnvStaging](#setappenvstaging) [SetAppEnvTesting](#setappenvtesting) |
 | **Container detection** | [IsContainer](#iscontainer) [IsDocker](#isdocker) [IsDockerHost](#isdockerhost) [IsDockerInDocker](#isdockerindocker) [IsHostEnvironment](#ishostenvironment) [IsKubernetes](#iskubernetes) |
 | **Debugging** | [Dump](#dump) |
 | **Environment loading** | [IsEnvLoaded](#isenvloaded) [LoadEnvFileIfExists](#loadenvfileifexists) |
@@ -182,17 +182,6 @@ _ = os.Setenv("APP_ENV", "local")
 env.Dump(env.IsAppEnv(env.Production, env.Staging))
 
 // #bool false
-```
-
-### <a id="isappenvdev"></a>IsAppEnvDev · readonly
-
-IsAppEnvDev checks if APP_ENV is "dev".
-
-```go
-_ = os.Setenv("APP_ENV", env.Dev)
-env.Dump(env.IsAppEnvDev())
-
-// #bool true
 ```
 
 ### <a id="isappenvlocal"></a>IsAppEnvLocal · readonly
@@ -283,17 +272,6 @@ _ = env.SetAppEnv(env.Staging)
 env.Dump(env.GetAppEnv())
 
 // #string "staging"
-```
-
-### <a id="setappenvdev"></a>SetAppEnvDev · mutates-process-env
-
-SetAppEnvDev sets APP_ENV to "dev".
-
-```go
-_ = env.SetAppEnvDev()
-env.Dump(env.GetAppEnv())
-
-// #string "dev"
 ```
 
 ### <a id="setappenvlocal"></a>SetAppEnvLocal · mutates-process-env
@@ -661,21 +639,21 @@ GetEnum ensures the environment variable's value is in the allowed list.
 _Example: accept only staged environments_
 
 ```go
-_ = os.Setenv("APP_ENV", "prod")
-appEnv := env.GetEnum("APP_ENV", "dev", []string{"dev", "staging", "prod"})
+_ = os.Setenv("APP_ENV", "production")
+appEnv := env.GetEnum("APP_ENV", "local", []string{"local", "staging", "production"})
 env.Dump(appEnv)
 
-// #string "prod"
+// #string "production"
 ```
 
 _Example: fallback when unset_
 
 ```go
 os.Unsetenv("APP_ENV")
-appEnv = env.GetEnum("APP_ENV", "dev", []string{"dev", "staging", "prod"})
+appEnv = env.GetEnum("APP_ENV", "local", []string{"local", "staging", "production"})
 env.Dump(appEnv)
 
-// #string "dev"
+// #string "local"
 ```
 
 ### <a id="getfloat"></a>GetFloat · readonly

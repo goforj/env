@@ -11,7 +11,6 @@ import (
 const (
 	Testing    = "testing"
 	Local      = "local"
-	Dev        = "dev"
 	Staging    = "staging"
 	Production = "production"
 )
@@ -151,20 +150,6 @@ func IsAppEnvLocal() bool {
 	return IsAppEnv(Local)
 }
 
-// IsAppEnvDev checks if APP_ENV is "dev".
-// @group Application environment
-// @behavior readonly
-//
-// Example:
-//
-//	_ = os.Setenv("APP_ENV", env.Dev)
-//	env.Dump(env.IsAppEnvDev())
-//
-//	// #bool true
-func IsAppEnvDev() bool {
-	return IsAppEnv(Dev)
-}
-
 // IsAppEnvTestingOrLocal checks if APP_ENV is "testing" or "local".
 // @group Application environment
 // @behavior readonly
@@ -212,20 +197,6 @@ func SetAppEnvLocal() error {
 	return SetAppEnv(Local)
 }
 
-// SetAppEnvDev sets APP_ENV to "dev".
-// @group Application environment
-// @behavior mutates-process-env
-//
-// Example:
-//
-//	_ = env.SetAppEnvDev()
-//	env.Dump(env.GetAppEnv())
-//
-//	// #string "dev"
-func SetAppEnvDev() error {
-	return SetAppEnv(Dev)
-}
-
 // SetAppEnvStaging sets APP_ENV to "staging".
 // @group Application environment
 // @behavior mutates-process-env
@@ -270,7 +241,7 @@ func SetAppEnvTesting() error {
 
 func isValidAppEnv(appEnv string) bool {
 	switch appEnv {
-	case Testing, Local, Dev, Staging, Production:
+	case Testing, Local, Staging, Production:
 		return true
 	default:
 		return false

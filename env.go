@@ -361,19 +361,19 @@ func GetMap(key, fallback string) map[string]string {
 //
 // Example: accept only staged environments
 //
-//	_ = os.Setenv("APP_ENV", "prod")
-//	appEnv := env.GetEnum("APP_ENV", "dev", []string{"dev", "staging", "prod"})
+//	_ = os.Setenv("APP_ENV", "production")
+//	appEnv := env.GetEnum("APP_ENV", "local", []string{"local", "staging", "production"})
 //	env.Dump(appEnv)
 //
-//	// #string "prod"
+//	// #string "production"
 //
 // Example: fallback when unset
 //
 //	os.Unsetenv("APP_ENV")
-//	appEnv = env.GetEnum("APP_ENV", "dev", []string{"dev", "staging", "prod"})
+//	appEnv = env.GetEnum("APP_ENV", "local", []string{"local", "staging", "production"})
 //	env.Dump(appEnv)
 //
-//	// #string "dev"
+//	// #string "local"
 func GetEnum(key, fallback string, allowed []string) string {
 	val := Get(key, fallback)
 	for _, a := range allowed {

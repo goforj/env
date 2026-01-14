@@ -111,7 +111,7 @@ func TestGetMap(t *testing.T) {
 
 func TestGetEnum(t *testing.T) {
 	withEnv("APP_ENV", "staging", func() {
-		got := GetEnum("APP_ENV", "dev", []string{"dev", "staging", "prod"})
+		got := GetEnum("APP_ENV", "local", []string{"local", "staging", "production"})
 		if got != "staging" {
 			t.Fatalf("expected staging, got %q", got)
 		}
@@ -120,15 +120,15 @@ func TestGetEnum(t *testing.T) {
 
 func TestGetEnumInvalid(t *testing.T) {
 	withEnv("APP_ENV", "invalid", func() {
-		if got := GetEnum("APP_ENV", "dev", []string{"dev", "staging", "prod"}); got != "dev" {
-			t.Fatalf("expected fallback dev, got %q", got)
+		if got := GetEnum("APP_ENV", "local", []string{"local", "staging", "production"}); got != "local" {
+			t.Fatalf("expected fallback local, got %q", got)
 		}
 	})
 }
 
 func TestGetEnumFallbackNotAllowed(t *testing.T) {
 	withEnv("APP_ENV", "unknown", func() {
-		if got := GetEnum("APP_ENV", "invalid-fallback", []string{"dev", "staging"}); got != "invalid-fallback" {
+		if got := GetEnum("APP_ENV", "invalid-fallback", []string{"local", "staging"}); got != "invalid-fallback" {
 			t.Fatalf("expected raw fallback when not allowed, got %q", got)
 		}
 	})

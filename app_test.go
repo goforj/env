@@ -30,8 +30,8 @@ func TestAppEnvHelpers(t *testing.T) {
 	if !IsAppEnv(Staging, Production) {
 		t.Fatalf("IsAppEnv should match staging")
 	}
-	if IsAppEnvDev() || IsAppEnvLocal() || IsAppEnvTestingOrLocal() {
-		t.Fatalf("unexpected dev/local/testing match")
+	if IsAppEnvLocal() || IsAppEnvTestingOrLocal() {
+		t.Fatalf("unexpected local/testing match")
 	}
 
 	_ = os.Setenv("APP_ENV", Production)
@@ -42,9 +42,6 @@ func TestAppEnvHelpers(t *testing.T) {
 	_ = os.Setenv("APP_ENV", Local)
 	if !IsAppEnvLocalOrStaging() {
 		t.Fatalf("IsAppEnvLocalOrStaging should be true for local")
-	}
-	if IsAppEnvDev() {
-		t.Fatalf("IsAppEnvDev should be false for local")
 	}
 
 	_ = os.Setenv("APP_ENV", Staging)
@@ -81,7 +78,6 @@ func TestSetAppEnvHelpers(t *testing.T) {
 		want   string
 	}{
 		{name: "local", setter: SetAppEnvLocal, want: Local},
-		{name: "dev", setter: SetAppEnvDev, want: Dev},
 		{name: "staging", setter: SetAppEnvStaging, want: Staging},
 		{name: "production", setter: SetAppEnvProduction, want: Production},
 		{name: "testing", setter: SetAppEnvTesting, want: Testing},

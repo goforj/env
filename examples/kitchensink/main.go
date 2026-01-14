@@ -12,7 +12,6 @@ import (
 
 type snapshot struct {
 	APP_ENV           string
-	IsDev             bool
 	IsLocal           bool
 	IsStaging         bool
 	IsProduction      bool
@@ -54,7 +53,6 @@ func main() {
 
 	s := snapshot{
 		APP_ENV:           env.GetAppEnv(),
-		IsDev:             env.IsAppEnvDev(),
 		IsLocal:           env.IsAppEnvLocal(),
 		IsStaging:         env.IsAppEnvStaging(),
 		IsProduction:      env.IsAppEnvProduction(),
@@ -71,7 +69,7 @@ func main() {
 		Timeout:           env.GetDuration("HTTP_TIMEOUT", "5s"),
 		Peers:             env.GetSlice("PEERS", "10.0.0.1,10.0.0.2"),
 		Limits:            env.GetMap("LIMITS", "read=10,write=5"),
-		AppEnvEnum:        env.GetEnum("APP_ENV", "dev", []string{"dev", "staging", "prod"}),
+		AppEnvEnum:        env.GetEnum("APP_ENV", "local", []string{"local", "staging", "production"}),
 		OS:                env.OS(),
 		Arch:              env.Arch(),
 		IsLinux:           env.IsLinux(),
@@ -93,7 +91,6 @@ func main() {
 	// Example dump output:
 	// #main.snapshot {
 	//  +APP_ENV          => "local" #string
-	//  +IsDev            => false #bool
 	//  +IsLocal          => true #bool
 	//  +IsStaging        => false #bool
 	//  +IsProduction     => false #bool
@@ -116,7 +113,7 @@ func main() {
 	//     read => "10" #string
 	//     write => "5" #string
 	//  }
-	//  +AppEnvEnum        => "dev" #string
+	//  +AppEnvEnum        => "local" #string
 	//  +OS                => "darwin" #string
 	//  +Arch              => "arm64" #string
 	//  +IsLinux           => false #bool
