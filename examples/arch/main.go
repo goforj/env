@@ -3,7 +3,7 @@
 
 package main
 
-import "github.com/goforj/env"
+import "github.com/goforj/env/v2"
 
 func main() {
 	// Arch returns the CPU architecture the binary is running on.

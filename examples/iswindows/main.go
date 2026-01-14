@@ -3,7 +3,7 @@
 
 package main
 
-import "github.com/goforj/env"
+import "github.com/goforj/env/v2"
 
 func main() {
 	// IsWindows reports whether the runtime OS is Windows.

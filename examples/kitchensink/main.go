@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/goforj/env"
+	"github.com/goforj/env/v2"
 )
 
 type snapshot struct {

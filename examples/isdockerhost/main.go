@@ -3,7 +3,7 @@
 
 package main
 
-import "github.com/goforj/env"
+import "github.com/goforj/env/v2"
 
 func main() {
 	// IsDockerHost reports whether this container behaves like a Docker host.

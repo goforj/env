@@ -3,7 +3,7 @@
 
 package main
 
-import "github.com/goforj/env"
+import "github.com/goforj/env/v2"
 
 func main() {
 	// IsContainer detects common container runtimes (Docker, containerd, Kubernetes, Podman).

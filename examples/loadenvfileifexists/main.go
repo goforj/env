@@ -4,7 +4,7 @@
 package main
 
 import (
-	"github.com/goforj/env"
+	"github.com/goforj/env/v2"
 	"os"
 	"path/filepath"
 )

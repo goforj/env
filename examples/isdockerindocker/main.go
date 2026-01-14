@@ -3,7 +3,7 @@
 
 package main
 
-import "github.com/goforj/env"
+import "github.com/goforj/env/v2"
 
 func main() {
 	// IsDockerInDocker reports whether we are inside a Docker-in-Docker environment.
