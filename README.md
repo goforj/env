@@ -55,7 +55,7 @@ Accessing environment variables in Go often leads to:
 ## Installation
 
 ```bash
-go get github.com/goforj/env
+go get github.com/goforj/env/v2
 ````
 
 ## Quickstart
