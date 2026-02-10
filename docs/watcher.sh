@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-go install github.com/bokwoon95/wgo@latest
+if ! command -v wgo >/dev/null 2>&1; then
+  go install github.com/bokwoon95/wgo@latest
+fi
 
 echo "Watching for .go file changes to regenerate documentation..."
 

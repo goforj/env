@@ -41,7 +41,7 @@ var envLoaded = false
 // Example: test-specific env file
 //
 //	tmp, _ := os.MkdirTemp("", "envdoc")
-//	_ = os.WriteFile(filepath.Join(tmp, ".env.testing"), []byte("PORT=9090\nAPP_DEBUG=0"), 0o644)
+//	_ = os.WriteFile(filepath.Join(tmp, ".env.testing"), []byte("PORT=9090\nENV_DEBUG=0"), 0o644)
 //	_ = os.Chdir(tmp)
 //	_ = os.Setenv("APP_ENV", env.Testing)
 //
@@ -52,7 +52,7 @@ var envLoaded = false
 //
 // Example: default .env on a host
 //
-//	_ = os.WriteFile(".env", []byte("SERVICE=api\nAPP_DEBUG=3"), 0o644)
+//	_ = os.WriteFile(".env", []byte("SERVICE=api\nENV_DEBUG=3"), 0o644)
 //	_ = env.LoadEnvFileIfExists()
 //	env.Dump(os.Getenv("SERVICE"))
 //
@@ -98,7 +98,7 @@ func LoadEnvFileIfExists() error {
 	}
 
 	// display loaded env files
-	if GetInt("APP_DEBUG", "0") >= 3 {
+	if GetInt("ENV_DEBUG", "0") >= 3 {
 		printLoadedEnvFiles(loadedFiles)
 	}
 
