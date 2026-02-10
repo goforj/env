@@ -443,7 +443,7 @@ _Example: test-specific env file_
 
 ```go
 tmp, _ := os.MkdirTemp("", "envdoc")
-_ = os.WriteFile(filepath.Join(tmp, ".env.testing"), []byte("PORT=9090\nAPP_DEBUG=0"), 0o644)
+_ = os.WriteFile(filepath.Join(tmp, ".env.testing"), []byte("PORT=9090\nENV_DEBUG=0"), 0o644)
 _ = os.Chdir(tmp)
 _ = os.Setenv("APP_ENV", env.Testing)
 
@@ -456,7 +456,7 @@ env.Dump(os.Getenv("PORT"))
 _Example: default .env on a host_
 
 ```go
-_ = os.WriteFile(".env", []byte("SERVICE=api\nAPP_DEBUG=3"), 0o644)
+_ = os.WriteFile(".env", []byte("SERVICE=api\nENV_DEBUG=3"), 0o644)
 _ = env.LoadEnvFileIfExists()
 env.Dump(os.Getenv("SERVICE"))
 

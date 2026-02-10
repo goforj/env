@@ -15,7 +15,7 @@ func main() {
 
 	// Example: test-specific env file
 	tmp, _ := os.MkdirTemp("", "envdoc")
-	_ = os.WriteFile(filepath.Join(tmp, ".env.testing"), []byte("PORT=9090\nAPP_DEBUG=0"), 0o644)
+	_ = os.WriteFile(filepath.Join(tmp, ".env.testing"), []byte("PORT=9090\nENV_DEBUG=0"), 0o644)
 	_ = os.Chdir(tmp)
 	_ = os.Setenv("APP_ENV", env.Testing)
 
@@ -25,7 +25,7 @@ func main() {
 	// #string "9090"
 
 	// Example: default .env on a host
-	_ = os.WriteFile(".env", []byte("SERVICE=api\nAPP_DEBUG=3"), 0o644)
+	_ = os.WriteFile(".env", []byte("SERVICE=api\nENV_DEBUG=3"), 0o644)
 	_ = env.LoadEnvFileIfExists()
 	env.Dump(os.Getenv("SERVICE"))
 

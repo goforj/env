@@ -13,7 +13,7 @@ func TestLoadEnvFileIfExists_testingEnv(t *testing.T) {
 	baseEnvFile := tempDir + "/.env"
 
 	// Write mock .env.testing
-	err := os.WriteFile(dotEnvFile, []byte("FAKE_ENV_TESTING=testing_value\nAPP_DEBUG=0"), 0644)
+	err := os.WriteFile(dotEnvFile, []byte("FAKE_ENV_TESTING=testing_value\nENV_DEBUG=0"), 0644)
 	if err != nil {
 		t.Fatalf("Failed to create temp .env.testing: %v", err)
 	}
@@ -87,10 +87,10 @@ func TestLoadEnvFileIfExists_WithDotEnvHostBranch(t *testing.T) {
 	})
 
 	tmp := t.TempDir()
-	if err := os.WriteFile(tmp+"/.env.testing", []byte("APP_DEBUG=3"), 0o644); err != nil {
+	if err := os.WriteFile(tmp+"/.env.testing", []byte("ENV_DEBUG=3"), 0o644); err != nil {
 		t.Fatalf("write .env.testing: %v", err)
 	}
-	if err := os.WriteFile(tmp+"/.env.host", []byte("HOST_BRANCH=hit\nAPP_DEBUG=3"), 0o644); err != nil {
+	if err := os.WriteFile(tmp+"/.env.host", []byte("HOST_BRANCH=hit\nENV_DEBUG=3"), 0o644); err != nil {
 		t.Fatalf("write .env.host: %v", err)
 	}
 
