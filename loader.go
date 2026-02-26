@@ -47,7 +47,6 @@ var envLoaded = false
 //
 //	_ = env.LoadEnvFileIfExists()
 //	env.Dump(os.Getenv("PORT"))
-//
 //	// #string "9090"
 //
 // Example: default .env on a host
@@ -55,7 +54,6 @@ var envLoaded = false
 //	_ = os.WriteFile(".env", []byte("SERVICE=api\nENV_DEBUG=3"), 0o644)
 //	_ = env.LoadEnvFileIfExists()
 //	env.Dump(os.Getenv("SERVICE"))
-//
 //	// #string "api"
 func LoadEnvFileIfExists() error {
 	if os.Getenv("APP_ENV") == "" {
@@ -129,7 +127,6 @@ func envFileForAppEnv(appEnv string) (string, bool) {
 // Example:
 //
 //	env.Dump(env.IsEnvLoaded())
-//
 //	// #bool true  (after LoadEnvFileIfExists)
 //	// #bool false (otherwise)
 func IsEnvLoaded() bool {

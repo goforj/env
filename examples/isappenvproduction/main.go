@@ -13,6 +13,5 @@ func main() {
 
 	_ = os.Setenv("APP_ENV", env.Production)
 	env.Dump(env.IsAppEnvProduction())
-
 	// #bool true
 }

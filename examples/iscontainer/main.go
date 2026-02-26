@@ -10,7 +10,6 @@ func main() {
 
 	// Example: host vs container
 	env.Dump(env.IsContainer())
-
 	// #bool true  (inside most containers)
 	// #bool false (on bare-metal/VM hosts)
 }

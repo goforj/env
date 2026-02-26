@@ -158,7 +158,6 @@ _Example: simple retrieval_
 ```go
 _ = os.Setenv("APP_ENV", "staging")
 env.Dump(env.GetAppEnv())
-
 // #string "staging"
 ```
 
@@ -171,7 +170,6 @@ _Example: match any allowed environment_
 ```go
 _ = os.Setenv("APP_ENV", "staging")
 env.Dump(env.IsAppEnv(env.Production, env.Staging))
-
 // #bool true
 ```
 
@@ -180,7 +178,6 @@ _Example: unmatched environment_
 ```go
 _ = os.Setenv("APP_ENV", "local")
 env.Dump(env.IsAppEnv(env.Production, env.Staging))
-
 // #bool false
 ```
 
@@ -191,7 +188,6 @@ IsAppEnvLocal checks if APP_ENV is "local".
 ```go
 _ = os.Setenv("APP_ENV", env.Local)
 env.Dump(env.IsAppEnvLocal())
-
 // #bool true
 ```
 
@@ -202,7 +198,6 @@ IsAppEnvLocalOrStaging checks if APP_ENV is either "local" or "staging".
 ```go
 _ = os.Setenv("APP_ENV", env.Local)
 env.Dump(env.IsAppEnvLocalOrStaging())
-
 // #bool true
 ```
 
@@ -213,7 +208,6 @@ IsAppEnvProduction checks if APP_ENV is "production".
 ```go
 _ = os.Setenv("APP_ENV", env.Production)
 env.Dump(env.IsAppEnvProduction())
-
 // #bool true
 ```
 
@@ -224,7 +218,6 @@ IsAppEnvStaging checks if APP_ENV is "staging".
 ```go
 _ = os.Setenv("APP_ENV", env.Staging)
 env.Dump(env.IsAppEnvStaging())
-
 // #bool true
 ```
 
@@ -237,7 +230,6 @@ _Example: APP_ENV explicitly testing_
 ```go
 _ = os.Setenv("APP_ENV", env.Testing)
 env.Dump(env.IsAppEnvTesting())
-
 // #bool true
 ```
 
@@ -246,7 +238,6 @@ _Example: no test markers_
 ```go
 _ = os.Unsetenv("APP_ENV")
 env.Dump(env.IsAppEnvTesting())
-
 // #bool false (outside of test binaries)
 ```
 
@@ -257,7 +248,6 @@ IsAppEnvTestingOrLocal checks if APP_ENV is "testing" or "local".
 ```go
 _ = os.Setenv("APP_ENV", env.Testing)
 env.Dump(env.IsAppEnvTestingOrLocal())
-
 // #bool true
 ```
 
@@ -270,7 +260,6 @@ _Example: set a supported environment_
 ```go
 _ = env.SetAppEnv(env.Staging)
 env.Dump(env.GetAppEnv())
-
 // #string "staging"
 ```
 
@@ -281,7 +270,6 @@ SetAppEnvLocal sets APP_ENV to "local".
 ```go
 _ = env.SetAppEnvLocal()
 env.Dump(env.GetAppEnv())
-
 // #string "local"
 ```
 
@@ -292,7 +280,6 @@ SetAppEnvProduction sets APP_ENV to "production".
 ```go
 _ = env.SetAppEnvProduction()
 env.Dump(env.GetAppEnv())
-
 // #string "production"
 ```
 
@@ -303,7 +290,6 @@ SetAppEnvStaging sets APP_ENV to "staging".
 ```go
 _ = env.SetAppEnvStaging()
 env.Dump(env.GetAppEnv())
-
 // #string "staging"
 ```
 
@@ -314,7 +300,6 @@ SetAppEnvTesting sets APP_ENV to "testing".
 ```go
 _ = env.SetAppEnvTesting()
 env.Dump(env.GetAppEnv())
-
 // #string "testing"
 ```
 
@@ -328,7 +313,6 @@ _Example: host vs container_
 
 ```go
 env.Dump(env.IsContainer())
-
 // #bool true  (inside most containers)
 // #bool false (on bare-metal/VM hosts)
 ```
@@ -341,7 +325,6 @@ _Example: typical host_
 
 ```go
 env.Dump(env.IsDocker())
-
 // #bool false (unless inside Docker)
 ```
 
@@ -351,7 +334,6 @@ IsDockerHost reports whether this container behaves like a Docker host.
 
 ```go
 env.Dump(env.IsDockerHost())
-
 // #bool true  (when acting as Docker host)
 // #bool false (for normal containers/hosts)
 ```
@@ -362,7 +344,6 @@ IsDockerInDocker reports whether we are inside a Docker-in-Docker environment.
 
 ```go
 env.Dump(env.IsDockerInDocker())
-
 // #bool true  (inside DinD containers)
 // #bool false (on hosts or non-DinD containers)
 ```
@@ -374,7 +355,6 @@ container or orchestrated runtime.
 
 ```go
 env.Dump(env.IsHostEnvironment())
-
 // #bool true  (on bare-metal/VM hosts)
 // #bool false (inside containers)
 ```
@@ -385,7 +365,6 @@ IsKubernetes reports whether the process is running inside Kubernetes.
 
 ```go
 env.Dump(env.IsKubernetes())
-
 // #bool true  (inside Kubernetes pods)
 // #bool false (elsewhere)
 ```
@@ -401,7 +380,6 @@ _Example: integers_
 ```go
 nums := []int{1, 2, 3}
 env.Dump(nums)
-
 // #[]int [
 //   0 => 1 #int
 //   1 => 2 #int
@@ -413,7 +391,6 @@ _Example: multiple values_
 
 ```go
 env.Dump("status", map[string]int{"ok": 1, "fail": 0})
-
 // #string "status"
 // #map[string]int [
 //   "fail" => 0 #int
@@ -429,7 +406,6 @@ IsEnvLoaded reports whether LoadEnvFileIfExists was executed in this process.
 
 ```go
 env.Dump(env.IsEnvLoaded())
-
 // #bool true  (after LoadEnvFileIfExists)
 // #bool false (otherwise)
 ```
@@ -449,7 +425,6 @@ _ = os.Setenv("APP_ENV", env.Testing)
 
 _ = env.LoadEnvFileIfExists()
 env.Dump(os.Getenv("PORT"))
-
 // #string "9090"
 ```
 
@@ -459,7 +434,6 @@ _Example: default .env on a host_
 _ = os.WriteFile(".env", []byte("SERVICE=api\nENV_DEBUG=3"), 0o644)
 _ = env.LoadEnvFileIfExists()
 env.Dump(os.Getenv("SERVICE"))
-
 // #string "api"
 ```
 
@@ -473,7 +447,6 @@ _Example: print GOARCH_
 
 ```go
 env.Dump(env.Arch())
-
 // #string "amd64"
 // #string "arm64"
 ```
@@ -484,7 +457,6 @@ IsBSD reports whether the runtime OS is any BSD variant.
 
 ```go
 env.Dump(env.IsBSD())
-
 // #bool true  (on BSD variants)
 // #bool false (elsewhere)
 ```
@@ -495,7 +467,6 @@ IsContainerOS reports whether this OS is *typically* used as a container base.
 
 ```go
 env.Dump(env.IsContainerOS())
-
 // #bool true  (on Linux)
 // #bool false (on macOS/Windows)
 ```
@@ -506,7 +477,6 @@ IsLinux reports whether the runtime OS is Linux.
 
 ```go
 env.Dump(env.IsLinux())
-
 // #bool true  (on Linux)
 // #bool false (on other OSes)
 ```
@@ -517,7 +487,6 @@ IsMac reports whether the runtime OS is macOS (Darwin).
 
 ```go
 env.Dump(env.IsMac())
-
 // #bool true  (on macOS)
 // #bool false (elsewhere)
 ```
@@ -528,7 +497,6 @@ IsUnix reports whether the OS is Unix-like.
 
 ```go
 env.Dump(env.IsUnix())
-
 // #bool true  (on Unix-like OSes)
 // #bool false (e.g., on Windows or Plan 9)
 ```
@@ -539,7 +507,6 @@ IsWindows reports whether the runtime OS is Windows.
 
 ```go
 env.Dump(env.IsWindows())
-
 // #bool true  (on Windows)
 // #bool false (elsewhere)
 ```
@@ -552,7 +519,6 @@ _Example: inspect GOOS_
 
 ```go
 env.Dump(env.OS())
-
 // #string "linux"   (on Linux)
 // #string "darwin"  (on macOS)
 // #string "windows" (on Windows)
@@ -570,7 +536,6 @@ _Example: fallback when unset_
 os.Unsetenv("DB_HOST")
 host := env.Get("DB_HOST", "localhost")
 env.Dump(host)
-
 // #string "localhost"
 ```
 
@@ -580,7 +545,6 @@ _Example: prefer existing value_
 _ = os.Setenv("DB_HOST", "db.internal")
 host = env.Get("DB_HOST", "localhost")
 env.Dump(host)
-
 // #string "db.internal"
 ```
 
@@ -594,7 +558,6 @@ _Example: numeric truthy_
 _ = os.Setenv("DEBUG", "1")
 debug := env.GetBool("DEBUG", "false")
 env.Dump(debug)
-
 // #bool true
 ```
 
@@ -604,7 +567,6 @@ _Example: fallback string_
 os.Unsetenv("DEBUG")
 debug = env.GetBool("DEBUG", "false")
 env.Dump(debug)
-
 // #bool false
 ```
 
@@ -618,7 +580,6 @@ _Example: override request timeout_
 _ = os.Setenv("HTTP_TIMEOUT", "30s")
 timeout := env.GetDuration("HTTP_TIMEOUT", "5s")
 env.Dump(timeout)
-
 // #time.Duration 30s
 ```
 
@@ -628,7 +589,6 @@ _Example: fallback when unset_
 os.Unsetenv("HTTP_TIMEOUT")
 timeout = env.GetDuration("HTTP_TIMEOUT", "5s")
 env.Dump(timeout)
-
 // #time.Duration 5s
 ```
 
@@ -642,7 +602,6 @@ _Example: accept only staged environments_
 _ = os.Setenv("APP_ENV", "production")
 appEnv := env.GetEnum("APP_ENV", "local", []string{"local", "staging", "production"})
 env.Dump(appEnv)
-
 // #string "production"
 ```
 
@@ -652,7 +611,6 @@ _Example: fallback when unset_
 os.Unsetenv("APP_ENV")
 appEnv = env.GetEnum("APP_ENV", "local", []string{"local", "staging", "production"})
 env.Dump(appEnv)
-
 // #string "local"
 ```
 
@@ -666,7 +624,6 @@ _Example: override threshold_
 _ = os.Setenv("THRESHOLD", "0.82")
 threshold := env.GetFloat("THRESHOLD", "0.75")
 env.Dump(threshold)
-
 // #float64 0.82
 ```
 
@@ -676,7 +633,6 @@ _Example: fallback with decimal string_
 os.Unsetenv("THRESHOLD")
 threshold = env.GetFloat("THRESHOLD", "0.75")
 env.Dump(threshold)
-
 // #float64 0.75
 ```
 
@@ -690,7 +646,6 @@ _Example: fallback used_
 os.Unsetenv("PORT")
 port := env.GetInt("PORT", "3000")
 env.Dump(port)
-
 // #int 3000
 ```
 
@@ -700,7 +655,6 @@ _Example: env overrides fallback_
 _ = os.Setenv("PORT", "8080")
 port = env.GetInt("PORT", "3000")
 env.Dump(port)
-
 // #int 8080
 ```
 
@@ -714,7 +668,6 @@ _Example: parse large numbers safely_
 _ = os.Setenv("MAX_SIZE", "1048576")
 size := env.GetInt64("MAX_SIZE", "512")
 env.Dump(size)
-
 // #int64 1048576
 ```
 
@@ -724,7 +677,6 @@ _Example: fallback when unset_
 os.Unsetenv("MAX_SIZE")
 size = env.GetInt64("MAX_SIZE", "512")
 env.Dump(size)
-
 // #int64 512
 ```
 
@@ -738,7 +690,6 @@ _Example: parse throttling config_
 _ = os.Setenv("LIMITS", "read=10, write=5, burst=20")
 limits := env.GetMap("LIMITS", "")
 env.Dump(limits)
-
 // #map[string]string [
 //  "burst" => "20" #string
 //  "read"  => "10" #string
@@ -752,7 +703,6 @@ _Example: returns empty map when unset or blank_
 os.Unsetenv("LIMITS")
 limits = env.GetMap("LIMITS", "")
 env.Dump(limits)
-
 // #map[string]string []
 ```
 
@@ -766,7 +716,6 @@ _Example: trimmed addresses_
 _ = os.Setenv("PEERS", "10.0.0.1, 10.0.0.2")
 peers := env.GetSlice("PEERS", "")
 env.Dump(peers)
-
 // #[]string [
 //  0 => "10.0.0.1" #string
 //  1 => "10.0.0.2" #string
@@ -779,7 +728,6 @@ _Example: empty becomes empty slice_
 os.Unsetenv("PEERS")
 peers = env.GetSlice("PEERS", "")
 env.Dump(peers)
-
 // #[]string []
 ```
 
@@ -793,7 +741,6 @@ _Example: defaults to fallback when missing_
 os.Unsetenv("WORKERS")
 workers := env.GetUint("WORKERS", "4")
 env.Dump(workers)
-
 // #uint 4
 ```
 
@@ -803,7 +750,6 @@ _Example: uses provided unsigned value_
 _ = os.Setenv("WORKERS", "16")
 workers = env.GetUint("WORKERS", "4")
 env.Dump(workers)
-
 // #uint 16
 ```
 
@@ -817,7 +763,6 @@ _Example: high range values_
 _ = os.Setenv("MAX_ITEMS", "5000")
 maxItems := env.GetUint64("MAX_ITEMS", "100")
 env.Dump(maxItems)
-
 // #uint64 5000
 ```
 
@@ -827,7 +772,6 @@ _Example: fallback when unset_
 os.Unsetenv("MAX_ITEMS")
 maxItems = env.GetUint64("MAX_ITEMS", "100")
 env.Dump(maxItems)
-
 // #uint64 100
 ```
 
@@ -841,7 +785,6 @@ _Example: required secret_
 _ = os.Setenv("API_SECRET", "s3cr3t")
 secret := env.MustGet("API_SECRET")
 env.Dump(secret)
-
 // #string "s3cr3t"
 ```
 
@@ -862,7 +805,6 @@ _Example: gate features explicitly_
 _ = os.Setenv("FEATURE_ENABLED", "true")
 enabled := env.MustGetBool("FEATURE_ENABLED")
 env.Dump(enabled)
-
 // #bool true
 ```
 
@@ -883,7 +825,6 @@ _Example: ensure numeric port_
 _ = os.Setenv("PORT", "8080")
 port := env.MustGetInt("PORT")
 env.Dump(port)
-
 // #int 8080
 ```
 

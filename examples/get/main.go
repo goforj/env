@@ -15,13 +15,11 @@ func main() {
 	os.Unsetenv("DB_HOST")
 	host := env.Get("DB_HOST", "localhost")
 	env.Dump(host)
-
 	// #string "localhost"
 
 	// Example: prefer existing value
 	_ = os.Setenv("DB_HOST", "db.internal")
 	host = env.Get("DB_HOST", "localhost")
 	env.Dump(host)
-
 	// #string "db.internal"
 }

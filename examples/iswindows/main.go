@@ -9,7 +9,6 @@ func main() {
 	// IsWindows reports whether the runtime OS is Windows.
 
 	env.Dump(env.IsWindows())
-
 	// #bool true  (on Windows)
 	// #bool false (elsewhere)
 }

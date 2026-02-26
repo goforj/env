@@ -15,13 +15,11 @@ func main() {
 	_ = os.Setenv("MAX_SIZE", "1048576")
 	size := env.GetInt64("MAX_SIZE", "512")
 	env.Dump(size)
-
 	// #int64 1048576
 
 	// Example: fallback when unset
 	os.Unsetenv("MAX_SIZE")
 	size = env.GetInt64("MAX_SIZE", "512")
 	env.Dump(size)
-
 	// #int64 512
 }

@@ -10,7 +10,6 @@ package env
 // Example:
 //
 //	env.Dump(env.IsHostEnvironment())
-//
 //	// #bool true  (on bare-metal/VM hosts)
 //	// #bool false (inside containers)
 func IsHostEnvironment() bool {

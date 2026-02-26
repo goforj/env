@@ -10,6 +10,5 @@ func main() {
 
 	// Example: typical host
 	env.Dump(env.IsDocker())
-
 	// #bool false (unless inside Docker)
 }

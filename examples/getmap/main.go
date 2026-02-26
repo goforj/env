@@ -15,7 +15,6 @@ func main() {
 	_ = os.Setenv("LIMITS", "read=10, write=5, burst=20")
 	limits := env.GetMap("LIMITS", "")
 	env.Dump(limits)
-
 	// #map[string]string [
 	//  "burst" => "20" #string
 	//  "read"  => "10" #string
@@ -26,6 +25,5 @@ func main() {
 	os.Unsetenv("LIMITS")
 	limits = env.GetMap("LIMITS", "")
 	env.Dump(limits)
-
 	// #map[string]string []
 }

@@ -35,7 +35,6 @@ const (
 // Example: typical host
 //
 //	env.Dump(env.IsDocker())
-//
 //	// #bool false (unless inside Docker)
 func IsDocker() bool {
 	// Check /.dockerenv
@@ -61,7 +60,6 @@ func IsDocker() bool {
 // Example:
 //
 //	env.Dump(env.IsDockerInDocker())
-//
 //	// #bool true  (inside DinD containers)
 //	// #bool false (on hosts or non-DinD containers)
 func IsDockerInDocker() bool {
@@ -87,7 +85,6 @@ func IsDockerInDocker() bool {
 // Example:
 //
 //	env.Dump(env.IsDockerHost())
-//
 //	// #bool true  (when acting as Docker host)
 //	// #bool false (for normal containers/hosts)
 func IsDockerHost() bool {
@@ -115,7 +112,6 @@ func IsDockerHost() bool {
 // Example: host vs container
 //
 //	env.Dump(env.IsContainer())
-//
 //	// #bool true  (inside most containers)
 //	// #bool false (on bare-metal/VM hosts)
 func IsContainer() bool {
@@ -149,7 +145,6 @@ func IsContainer() bool {
 // Example:
 //
 //	env.Dump(env.IsKubernetes())
-//
 //	// #bool true  (inside Kubernetes pods)
 //	// #bool false (elsewhere)
 func IsKubernetes() bool {

@@ -15,7 +15,6 @@ func main() {
 	_ = os.Setenv("PEERS", "10.0.0.1, 10.0.0.2")
 	peers := env.GetSlice("PEERS", "")
 	env.Dump(peers)
-
 	// #[]string [
 	//  0 => "10.0.0.1" #string
 	//  1 => "10.0.0.2" #string
@@ -25,6 +24,5 @@ func main() {
 	os.Unsetenv("PEERS")
 	peers = env.GetSlice("PEERS", "")
 	env.Dump(peers)
-
 	// #[]string []
 }

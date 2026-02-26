@@ -10,6 +10,5 @@ func main() {
 
 	_ = env.SetAppEnvLocal()
 	env.Dump(env.GetAppEnv())
-
 	// #string "local"
 }

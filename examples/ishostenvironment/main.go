@@ -10,7 +10,6 @@ func main() {
 	// container or orchestrated runtime.
 
 	env.Dump(env.IsHostEnvironment())
-
 	// #bool true  (on bare-metal/VM hosts)
 	// #bool false (inside containers)
 }

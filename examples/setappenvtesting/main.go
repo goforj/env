@@ -10,6 +10,5 @@ func main() {
 
 	_ = env.SetAppEnvTesting()
 	env.Dump(env.GetAppEnv())
-
 	// #string "testing"
 }

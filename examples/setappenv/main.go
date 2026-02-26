@@ -11,6 +11,5 @@ func main() {
 	// Example: set a supported environment
 	_ = env.SetAppEnv(env.Staging)
 	env.Dump(env.GetAppEnv())
-
 	// #string "staging"
 }

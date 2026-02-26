@@ -21,13 +21,11 @@ func main() {
 
 	_ = env.LoadEnvFileIfExists()
 	env.Dump(os.Getenv("PORT"))
-
 	// #string "9090"
 
 	// Example: default .env on a host
 	_ = os.WriteFile(".env", []byte("SERVICE=api\nENV_DEBUG=3"), 0o644)
 	_ = env.LoadEnvFileIfExists()
 	env.Dump(os.Getenv("SERVICE"))
-
 	// #string "api"
 }

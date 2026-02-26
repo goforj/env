@@ -10,6 +10,5 @@ func main() {
 
 	_ = env.SetAppEnvProduction()
 	env.Dump(env.GetAppEnv())
-
 	// #string "production"
 }

@@ -10,7 +10,6 @@ func main() {
 
 	// Example: print GOARCH
 	env.Dump(env.Arch())
-
 	// #string "amd64"
 	// #string "arm64"
 }

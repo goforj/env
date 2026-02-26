@@ -13,6 +13,5 @@ func main() {
 
 	_ = os.Setenv("APP_ENV", env.Staging)
 	env.Dump(env.IsAppEnvStaging())
-
 	// #bool true
 }

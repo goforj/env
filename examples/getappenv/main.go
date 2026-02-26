@@ -14,6 +14,5 @@ func main() {
 	// Example: simple retrieval
 	_ = os.Setenv("APP_ENV", "staging")
 	env.Dump(env.GetAppEnv())
-
 	// #string "staging"
 }

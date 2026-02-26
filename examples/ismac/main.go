@@ -9,7 +9,6 @@ func main() {
 	// IsMac reports whether the runtime OS is macOS (Darwin).
 
 	env.Dump(env.IsMac())
-
 	// #bool true  (on macOS)
 	// #bool false (elsewhere)
 }

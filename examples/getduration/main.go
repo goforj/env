@@ -15,13 +15,11 @@ func main() {
 	_ = os.Setenv("HTTP_TIMEOUT", "30s")
 	timeout := env.GetDuration("HTTP_TIMEOUT", "5s")
 	env.Dump(timeout)
-
 	// #time.Duration 30s
 
 	// Example: fallback when unset
 	os.Unsetenv("HTTP_TIMEOUT")
 	timeout = env.GetDuration("HTTP_TIMEOUT", "5s")
 	env.Dump(timeout)
-
 	// #time.Duration 5s
 }

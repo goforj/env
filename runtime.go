@@ -21,7 +21,6 @@ var (
 // Example: inspect GOOS
 //
 //	env.Dump(env.OS())
-//
 //	// #string "linux"   (on Linux)
 //	// #string "darwin"  (on macOS)
 //	// #string "windows" (on Windows)
@@ -38,7 +37,6 @@ func OS() string {
 // Example: print GOARCH
 //
 //	env.Dump(env.Arch())
-//
 //	// #string "amd64"
 //	// #string "arm64"
 func Arch() string {
@@ -52,7 +50,6 @@ func Arch() string {
 // Example:
 //
 //	env.Dump(env.IsLinux())
-//
 //	// #bool true  (on Linux)
 //	// #bool false (on other OSes)
 func IsLinux() bool {
@@ -66,7 +63,6 @@ func IsLinux() bool {
 // Example:
 //
 //	env.Dump(env.IsMac())
-//
 //	// #bool true  (on macOS)
 //	// #bool false (elsewhere)
 func IsMac() bool {
@@ -80,7 +76,6 @@ func IsMac() bool {
 // Example:
 //
 //	env.Dump(env.IsWindows())
-//
 //	// #bool true  (on Windows)
 //	// #bool false (elsewhere)
 func IsWindows() bool {
@@ -96,7 +91,6 @@ func IsWindows() bool {
 // Example:
 //
 //	env.Dump(env.IsBSD())
-//
 //	// #bool true  (on BSD variants)
 //	// #bool false (elsewhere)
 func IsBSD() bool {
@@ -116,7 +110,6 @@ func IsBSD() bool {
 // Example:
 //
 //	env.Dump(env.IsUnix())
-//
 //	// #bool true  (on Unix-like OSes)
 //	// #bool false (e.g., on Windows or Plan 9)
 func IsUnix() bool {
@@ -137,7 +130,6 @@ func IsUnix() bool {
 // Example:
 //
 //	env.Dump(env.IsContainerOS())
-//
 //	// #bool true  (on Linux)
 //	// #bool false (on macOS/Windows)
 func IsContainerOS() bool {

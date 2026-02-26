@@ -25,14 +25,12 @@ const (
 //
 //	_ = os.Setenv("APP_ENV", env.Testing)
 //	env.Dump(env.IsAppEnvTesting())
-//
 //	// #bool true
 //
 // Example: no test markers
 //
 //	_ = os.Unsetenv("APP_ENV")
 //	env.Dump(env.IsAppEnvTesting())
-//
 //	// #bool false (outside of test binaries)
 func IsAppEnvTesting() bool {
 	return os.Getenv("APP_ENV") == Testing ||
@@ -61,7 +59,6 @@ func isTestSuffixFromArguments() bool {
 //
 //	_ = os.Setenv("APP_ENV", "staging")
 //	env.Dump(env.GetAppEnv())
-//
 //	// #string "staging"
 func GetAppEnv() string {
 	return os.Getenv("APP_ENV")
@@ -75,14 +72,12 @@ func GetAppEnv() string {
 //
 //	_ = os.Setenv("APP_ENV", "staging")
 //	env.Dump(env.IsAppEnv(env.Production, env.Staging))
-//
 //	// #bool true
 //
 // Example: unmatched environment
 //
 //	_ = os.Setenv("APP_ENV", "local")
 //	env.Dump(env.IsAppEnv(env.Production, env.Staging))
-//
 //	// #bool false
 func IsAppEnv(envs ...string) bool {
 	current := os.Getenv("APP_ENV")
@@ -102,7 +97,6 @@ func IsAppEnv(envs ...string) bool {
 //
 //	_ = os.Setenv("APP_ENV", env.Production)
 //	env.Dump(env.IsAppEnvProduction())
-//
 //	// #bool true
 func IsAppEnvProduction() bool {
 	return IsAppEnv(Production)
@@ -116,7 +110,6 @@ func IsAppEnvProduction() bool {
 //
 //	_ = os.Setenv("APP_ENV", env.Staging)
 //	env.Dump(env.IsAppEnvStaging())
-//
 //	// #bool true
 func IsAppEnvStaging() bool {
 	return IsAppEnv(Staging)
@@ -130,7 +123,6 @@ func IsAppEnvStaging() bool {
 //
 //	_ = os.Setenv("APP_ENV", env.Local)
 //	env.Dump(env.IsAppEnvLocalOrStaging())
-//
 //	// #bool true
 func IsAppEnvLocalOrStaging() bool {
 	return IsAppEnv(Local, Staging)
@@ -144,7 +136,6 @@ func IsAppEnvLocalOrStaging() bool {
 //
 //	_ = os.Setenv("APP_ENV", env.Local)
 //	env.Dump(env.IsAppEnvLocal())
-//
 //	// #bool true
 func IsAppEnvLocal() bool {
 	return IsAppEnv(Local)
@@ -158,7 +149,6 @@ func IsAppEnvLocal() bool {
 //
 //	_ = os.Setenv("APP_ENV", env.Testing)
 //	env.Dump(env.IsAppEnvTestingOrLocal())
-//
 //	// #bool true
 func IsAppEnvTestingOrLocal() bool {
 	return IsAppEnv(Testing, Local)
@@ -174,7 +164,6 @@ func IsAppEnvTestingOrLocal() bool {
 //
 //	_ = env.SetAppEnv(env.Staging)
 //	env.Dump(env.GetAppEnv())
-//
 //	// #string "staging"
 func SetAppEnv(appEnv string) error {
 	if !isValidAppEnv(appEnv) {
@@ -191,7 +180,6 @@ func SetAppEnv(appEnv string) error {
 //
 //	_ = env.SetAppEnvLocal()
 //	env.Dump(env.GetAppEnv())
-//
 //	// #string "local"
 func SetAppEnvLocal() error {
 	return SetAppEnv(Local)
@@ -205,7 +193,6 @@ func SetAppEnvLocal() error {
 //
 //	_ = env.SetAppEnvStaging()
 //	env.Dump(env.GetAppEnv())
-//
 //	// #string "staging"
 func SetAppEnvStaging() error {
 	return SetAppEnv(Staging)
@@ -219,7 +206,6 @@ func SetAppEnvStaging() error {
 //
 //	_ = env.SetAppEnvProduction()
 //	env.Dump(env.GetAppEnv())
-//
 //	// #string "production"
 func SetAppEnvProduction() error {
 	return SetAppEnv(Production)
@@ -233,7 +219,6 @@ func SetAppEnvProduction() error {
 //
 //	_ = env.SetAppEnvTesting()
 //	env.Dump(env.GetAppEnv())
-//
 //	// #string "testing"
 func SetAppEnvTesting() error {
 	return SetAppEnv(Testing)

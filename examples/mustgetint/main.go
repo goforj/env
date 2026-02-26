@@ -15,7 +15,6 @@ func main() {
 	_ = os.Setenv("PORT", "8080")
 	port := env.MustGetInt("PORT")
 	env.Dump(port)
-
 	// #int 8080
 
 	// Example: panic on bad value

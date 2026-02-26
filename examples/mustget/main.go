@@ -15,7 +15,6 @@ func main() {
 	_ = os.Setenv("API_SECRET", "s3cr3t")
 	secret := env.MustGet("API_SECRET")
 	env.Dump(secret)
-
 	// #string "s3cr3t"
 
 	// Example: panic on missing value

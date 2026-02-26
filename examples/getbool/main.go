@@ -15,13 +15,11 @@ func main() {
 	_ = os.Setenv("DEBUG", "1")
 	debug := env.GetBool("DEBUG", "false")
 	env.Dump(debug)
-
 	// #bool true
 
 	// Example: fallback string
 	os.Unsetenv("DEBUG")
 	debug = env.GetBool("DEBUG", "false")
 	env.Dump(debug)
-
 	// #bool false
 }

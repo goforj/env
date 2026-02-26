@@ -13,6 +13,5 @@ func main() {
 
 	_ = os.Setenv("APP_ENV", env.Local)
 	env.Dump(env.IsAppEnvLocal())
-
 	// #bool true
 }

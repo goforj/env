@@ -13,6 +13,5 @@ func main() {
 
 	_ = os.Setenv("APP_ENV", env.Testing)
 	env.Dump(env.IsAppEnvTestingOrLocal())
-
 	// #bool true
 }

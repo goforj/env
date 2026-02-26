@@ -10,6 +10,5 @@ func main() {
 
 	_ = env.SetAppEnvStaging()
 	env.Dump(env.GetAppEnv())
-
 	// #string "staging"
 }

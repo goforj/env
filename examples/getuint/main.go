@@ -15,13 +15,11 @@ func main() {
 	os.Unsetenv("WORKERS")
 	workers := env.GetUint("WORKERS", "4")
 	env.Dump(workers)
-
 	// #uint 4
 
 	// Example: uses provided unsigned value
 	_ = os.Setenv("WORKERS", "16")
 	workers = env.GetUint("WORKERS", "4")
 	env.Dump(workers)
-
 	// #uint 16
 }

@@ -14,12 +14,10 @@ func main() {
 	// Example: match any allowed environment
 	_ = os.Setenv("APP_ENV", "staging")
 	env.Dump(env.IsAppEnv(env.Production, env.Staging))
-
 	// #bool true
 
 	// Example: unmatched environment
 	_ = os.Setenv("APP_ENV", "local")
 	env.Dump(env.IsAppEnv(env.Production, env.Staging))
-
 	// #bool false
 }

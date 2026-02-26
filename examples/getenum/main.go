@@ -15,13 +15,11 @@ func main() {
 	_ = os.Setenv("APP_ENV", "production")
 	appEnv := env.GetEnum("APP_ENV", "local", []string{"local", "staging", "production"})
 	env.Dump(appEnv)
-
 	// #string "production"
 
 	// Example: fallback when unset
 	os.Unsetenv("APP_ENV")
 	appEnv = env.GetEnum("APP_ENV", "local", []string{"local", "staging", "production"})
 	env.Dump(appEnv)
-
 	// #string "local"
 }

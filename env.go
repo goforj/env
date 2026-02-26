@@ -18,7 +18,6 @@ import (
 //	os.Unsetenv("DB_HOST")
 //	host := env.Get("DB_HOST", "localhost")
 //	env.Dump(host)
-//
 //	// #string "localhost"
 //
 // Example: prefer existing value
@@ -26,7 +25,6 @@ import (
 //	_ = os.Setenv("DB_HOST", "db.internal")
 //	host = env.Get("DB_HOST", "localhost")
 //	env.Dump(host)
-//
 //	// #string "db.internal"
 func Get(key, fallback string) string {
 	val := os.Getenv(key)
@@ -45,7 +43,6 @@ func Get(key, fallback string) string {
 //	os.Unsetenv("PORT")
 //	port := env.GetInt("PORT", "3000")
 //	env.Dump(port)
-//
 //	// #int 3000
 //
 // Example: env overrides fallback
@@ -53,7 +50,6 @@ func Get(key, fallback string) string {
 //	_ = os.Setenv("PORT", "8080")
 //	port = env.GetInt("PORT", "3000")
 //	env.Dump(port)
-//
 //	// #int 8080
 func GetInt(key, fallback string) int {
 	val := os.Getenv(key)
@@ -79,7 +75,6 @@ func GetInt(key, fallback string) int {
 //	_ = os.Setenv("MAX_SIZE", "1048576")
 //	size := env.GetInt64("MAX_SIZE", "512")
 //	env.Dump(size)
-//
 //	// #int64 1048576
 //
 // Example: fallback when unset
@@ -87,7 +82,6 @@ func GetInt(key, fallback string) int {
 //	os.Unsetenv("MAX_SIZE")
 //	size = env.GetInt64("MAX_SIZE", "512")
 //	env.Dump(size)
-//
 //	// #int64 512
 func GetInt64(key, fallback string) int64 {
 	val := os.Getenv(key)
@@ -113,7 +107,6 @@ func GetInt64(key, fallback string) int64 {
 //	os.Unsetenv("WORKERS")
 //	workers := env.GetUint("WORKERS", "4")
 //	env.Dump(workers)
-//
 //	// #uint 4
 //
 // Example: uses provided unsigned value
@@ -121,7 +114,6 @@ func GetInt64(key, fallback string) int64 {
 //	_ = os.Setenv("WORKERS", "16")
 //	workers = env.GetUint("WORKERS", "4")
 //	env.Dump(workers)
-//
 //	// #uint 16
 func GetUint(key, fallback string) uint {
 	val := os.Getenv(key)
@@ -147,7 +139,6 @@ func GetUint(key, fallback string) uint {
 //	_ = os.Setenv("MAX_ITEMS", "5000")
 //	maxItems := env.GetUint64("MAX_ITEMS", "100")
 //	env.Dump(maxItems)
-//
 //	// #uint64 5000
 //
 // Example: fallback when unset
@@ -155,7 +146,6 @@ func GetUint(key, fallback string) uint {
 //	os.Unsetenv("MAX_ITEMS")
 //	maxItems = env.GetUint64("MAX_ITEMS", "100")
 //	env.Dump(maxItems)
-//
 //	// #uint64 100
 func GetUint64(key, fallback string) uint64 {
 	val := os.Getenv(key)
@@ -181,7 +171,6 @@ func GetUint64(key, fallback string) uint64 {
 //	_ = os.Setenv("THRESHOLD", "0.82")
 //	threshold := env.GetFloat("THRESHOLD", "0.75")
 //	env.Dump(threshold)
-//
 //	// #float64 0.82
 //
 // Example: fallback with decimal string
@@ -189,7 +178,6 @@ func GetUint64(key, fallback string) uint64 {
 //	os.Unsetenv("THRESHOLD")
 //	threshold = env.GetFloat("THRESHOLD", "0.75")
 //	env.Dump(threshold)
-//
 //	// #float64 0.75
 func GetFloat(key, fallback string) float64 {
 	val := os.Getenv(key)
@@ -217,7 +205,6 @@ func GetFloat(key, fallback string) float64 {
 //	_ = os.Setenv("DEBUG", "1")
 //	debug := env.GetBool("DEBUG", "false")
 //	env.Dump(debug)
-//
 //	// #bool true
 //
 // Example: fallback string
@@ -225,7 +212,6 @@ func GetFloat(key, fallback string) float64 {
 //	os.Unsetenv("DEBUG")
 //	debug = env.GetBool("DEBUG", "false")
 //	env.Dump(debug)
-//
 //	// #bool false
 func GetBool(key, fallback string) bool {
 	val := os.Getenv(key)
@@ -251,7 +237,6 @@ func GetBool(key, fallback string) bool {
 //	_ = os.Setenv("HTTP_TIMEOUT", "30s")
 //	timeout := env.GetDuration("HTTP_TIMEOUT", "5s")
 //	env.Dump(timeout)
-//
 //	// #time.Duration 30s
 //
 // Example: fallback when unset
@@ -259,7 +244,6 @@ func GetBool(key, fallback string) bool {
 //	os.Unsetenv("HTTP_TIMEOUT")
 //	timeout = env.GetDuration("HTTP_TIMEOUT", "5s")
 //	env.Dump(timeout)
-//
 //	// #time.Duration 5s
 func GetDuration(key, fallback string) time.Duration {
 	val := os.Getenv(key)
@@ -285,7 +269,6 @@ func GetDuration(key, fallback string) time.Duration {
 //	_ = os.Setenv("PEERS", "10.0.0.1, 10.0.0.2")
 //	peers := env.GetSlice("PEERS", "")
 //	env.Dump(peers)
-//
 //	// #[]string [
 //	//  0 => "10.0.0.1" #string
 //	//  1 => "10.0.0.2" #string
@@ -296,7 +279,6 @@ func GetDuration(key, fallback string) time.Duration {
 //	os.Unsetenv("PEERS")
 //	peers = env.GetSlice("PEERS", "")
 //	env.Dump(peers)
-//
 //	// #[]string []
 func GetSlice(key, fallback string) []string {
 	val := Get(key, fallback)
@@ -320,7 +302,6 @@ func GetSlice(key, fallback string) []string {
 //	_ = os.Setenv("LIMITS", "read=10, write=5, burst=20")
 //	limits := env.GetMap("LIMITS", "")
 //	env.Dump(limits)
-//
 //	// #map[string]string [
 //	//  "burst" => "20" #string
 //	//  "read"  => "10" #string
@@ -332,7 +313,6 @@ func GetSlice(key, fallback string) []string {
 //	os.Unsetenv("LIMITS")
 //	limits = env.GetMap("LIMITS", "")
 //	env.Dump(limits)
-//
 //	// #map[string]string []
 func GetMap(key, fallback string) map[string]string {
 	val := Get(key, fallback)
@@ -364,7 +344,6 @@ func GetMap(key, fallback string) map[string]string {
 //	_ = os.Setenv("APP_ENV", "production")
 //	appEnv := env.GetEnum("APP_ENV", "local", []string{"local", "staging", "production"})
 //	env.Dump(appEnv)
-//
 //	// #string "production"
 //
 // Example: fallback when unset
@@ -372,7 +351,6 @@ func GetMap(key, fallback string) map[string]string {
 //	os.Unsetenv("APP_ENV")
 //	appEnv = env.GetEnum("APP_ENV", "local", []string{"local", "staging", "production"})
 //	env.Dump(appEnv)
-//
 //	// #string "local"
 func GetEnum(key, fallback string, allowed []string) string {
 	val := Get(key, fallback)
@@ -398,7 +376,6 @@ func GetEnum(key, fallback string, allowed []string) string {
 //	_ = os.Setenv("API_SECRET", "s3cr3t")
 //	secret := env.MustGet("API_SECRET")
 //	env.Dump(secret)
-//
 //	// #string "s3cr3t"
 //
 // Example: panic on missing value
@@ -422,7 +399,6 @@ func MustGet(key string) string {
 //	_ = os.Setenv("PORT", "8080")
 //	port := env.MustGetInt("PORT")
 //	env.Dump(port)
-//
 //	// #int 8080
 //
 // Example: panic on bad value
@@ -442,7 +418,6 @@ func MustGetInt(key string) int {
 //	_ = os.Setenv("FEATURE_ENABLED", "true")
 //	enabled := env.MustGetBool("FEATURE_ENABLED")
 //	env.Dump(enabled)
-//
 //	// #bool true
 //
 // Example: panic on invalid value

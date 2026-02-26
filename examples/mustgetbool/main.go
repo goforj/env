@@ -15,7 +15,6 @@ func main() {
 	_ = os.Setenv("FEATURE_ENABLED", "true")
 	enabled := env.MustGetBool("FEATURE_ENABLED")
 	env.Dump(enabled)
-
 	// #bool true
 
 	// Example: panic on invalid value

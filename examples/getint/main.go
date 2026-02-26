@@ -15,13 +15,11 @@ func main() {
 	os.Unsetenv("PORT")
 	port := env.GetInt("PORT", "3000")
 	env.Dump(port)
-
 	// #int 3000
 
 	// Example: env overrides fallback
 	_ = os.Setenv("PORT", "8080")
 	port = env.GetInt("PORT", "3000")
 	env.Dump(port)
-
 	// #int 8080
 }

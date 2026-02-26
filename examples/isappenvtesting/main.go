@@ -14,12 +14,10 @@ func main() {
 	// Example: APP_ENV explicitly testing
 	_ = os.Setenv("APP_ENV", env.Testing)
 	env.Dump(env.IsAppEnvTesting())
-
 	// #bool true
 
 	// Example: no test markers
 	_ = os.Unsetenv("APP_ENV")
 	env.Dump(env.IsAppEnvTesting())
-
 	// #bool false (outside of test binaries)
 }

@@ -22,7 +22,6 @@ func setDumpWriter(w io.Writer) {
 //
 //	nums := []int{1, 2, 3}
 //	env.Dump(nums)
-//
 //	// #[]int [
 //	//   0 => 1 #int
 //	//   1 => 2 #int
@@ -32,7 +31,6 @@ func setDumpWriter(w io.Writer) {
 // Example: multiple values
 //
 //	env.Dump("status", map[string]int{"ok": 1, "fail": 0})
-//
 //	// #string "status"
 //	// #map[string]int [
 //	//   "fail" => 0 #int
