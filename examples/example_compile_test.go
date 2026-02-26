@@ -1,4 +1,4 @@
-package env
+package examples
 
 import (
 	"bytes"
@@ -13,9 +13,7 @@ import (
 )
 
 func TestExamplesBuild(t *testing.T) {
-	examplesDir := "examples"
-
-	entries, err := os.ReadDir(examplesDir)
+	entries, err := os.ReadDir(".")
 	if err != nil {
 		t.Fatalf("cannot read examples directory: %v", err)
 	}
@@ -25,14 +23,12 @@ func TestExamplesBuild(t *testing.T) {
 			continue
 		}
 
-		// CAPTURE LOOP VARS
+		// Capture loop variable for parallel subtests.
 		name := e.Name()
-		path := filepath.Join(examplesDir, name)
-
 		t.Run(name, func(t *testing.T) {
-			t.Parallel() // 🔑 enable concurrency
+			t.Parallel()
 
-			if err := buildExampleWithoutTags(path); err != nil {
+			if err := buildExampleWithoutTags(name); err != nil {
 				t.Fatalf("example %q failed to build:\n%s", name, err)
 			}
 		})
@@ -47,8 +43,8 @@ func abs(p string) string {
 	return a
 }
 
-func buildExampleWithoutTags(exampleDir string) error {
-	orig := filepath.Join(exampleDir, "main.go")
+func buildExampleWithoutTags(exampleName string) error {
+	orig := filepath.Join(exampleName, "main.go")
 
 	src, err := os.ReadFile(orig)
 	if err != nil {
@@ -64,7 +60,7 @@ func buildExampleWithoutTags(exampleDir string) error {
 	defer os.RemoveAll(tmpDir)
 
 	tmpFile := filepath.Join(tmpDir, "main.go")
-	if err := os.WriteFile(tmpFile, clean, 0644); err != nil {
+	if err := os.WriteFile(tmpFile, clean, 0o644); err != nil {
 		return err
 	}
 
@@ -80,7 +76,7 @@ func buildExampleWithoutTags(exampleDir string) error {
 	}
 
 	overlayPath := filepath.Join(tmpDir, "overlay.json")
-	if err := os.WriteFile(overlayPath, overlayJSON, 0644); err != nil {
+	if err := os.WriteFile(overlayPath, overlayJSON, 0o644); err != nil {
 		return err
 	}
 
@@ -88,7 +84,7 @@ func buildExampleWithoutTags(exampleDir string) error {
 		"go", "build",
 		"-overlay", overlayPath,
 		"-o", os.DevNull,
-		"./"+exampleDir,
+		"./"+exampleName,
 	)
 
 	var stderr bytes.Buffer

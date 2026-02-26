@@ -22,7 +22,15 @@ jobs:
       - name: Install dependencies
         run: go mod tidy
 
-      - name: Run tests
+      - name: Run root module tests
+        run: go test ./... -v
+
+      - name: Install examples module dependencies
+        working-directory: examples
+        run: go mod tidy
+
+      - name: Run examples module tests
+        working-directory: examples
         run: go test ./... -v
 
       - name: Run tests with coverage
