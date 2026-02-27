@@ -322,7 +322,7 @@ func renderAPI(funcs []*FuncDoc) string {
 	var buf bytes.Buffer
 
 	// ---------------- Index ----------------
-	buf.WriteString("### Index\n\n")
+	buf.WriteString("### <a id=\"api-index\"></a>API Index\n\n")
 	buf.WriteString("| Group | Functions |\n")
 	buf.WriteString("|------:|-----------|\n")
 
@@ -352,7 +352,7 @@ func renderAPI(funcs []*FuncDoc) string {
 			anchor := strings.ToLower(fn.Name)
 
 			header := fn.Name
-			if fn.Behavior != "" {
+			if fn.Behavior != "" && fn.Behavior != "readonly" {
 				header += " · " + fn.Behavior
 			}
 			if fn.Fluent == "true" {

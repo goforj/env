@@ -135,7 +135,7 @@ Later files override earlier values. Subsequent calls are no-ops.
 
 <!-- api:embed:start -->
 
-### Index
+### <a id="api-index"></a>API Index
 
 | Group | Functions |
 |------:|-----------|
@@ -149,7 +149,7 @@ Later files override earlier values. Subsequent calls are no-ops.
 
 ## Application environment
 
-### <a id="getappenv"></a>GetAppEnv · readonly
+### <a id="getappenv"></a>GetAppEnv
 
 GetAppEnv returns the current APP_ENV (empty string if unset).
 
@@ -161,7 +161,7 @@ env.Dump(env.GetAppEnv())
 // #string "staging"
 ```
 
-### <a id="isappenv"></a>IsAppEnv · readonly
+### <a id="isappenv"></a>IsAppEnv
 
 IsAppEnv checks if APP_ENV matches any of the provided environments.
 
@@ -181,7 +181,7 @@ env.Dump(env.IsAppEnv(env.Production, env.Staging))
 // #bool false
 ```
 
-### <a id="isappenvlocal"></a>IsAppEnvLocal · readonly
+### <a id="isappenvlocal"></a>IsAppEnvLocal
 
 IsAppEnvLocal checks if APP_ENV is "local".
 
@@ -191,7 +191,7 @@ env.Dump(env.IsAppEnvLocal())
 // #bool true
 ```
 
-### <a id="isappenvlocalorstaging"></a>IsAppEnvLocalOrStaging · readonly
+### <a id="isappenvlocalorstaging"></a>IsAppEnvLocalOrStaging
 
 IsAppEnvLocalOrStaging checks if APP_ENV is either "local" or "staging".
 
@@ -201,7 +201,7 @@ env.Dump(env.IsAppEnvLocalOrStaging())
 // #bool true
 ```
 
-### <a id="isappenvproduction"></a>IsAppEnvProduction · readonly
+### <a id="isappenvproduction"></a>IsAppEnvProduction
 
 IsAppEnvProduction checks if APP_ENV is "production".
 
@@ -211,7 +211,7 @@ env.Dump(env.IsAppEnvProduction())
 // #bool true
 ```
 
-### <a id="isappenvstaging"></a>IsAppEnvStaging · readonly
+### <a id="isappenvstaging"></a>IsAppEnvStaging
 
 IsAppEnvStaging checks if APP_ENV is "staging".
 
@@ -221,7 +221,7 @@ env.Dump(env.IsAppEnvStaging())
 // #bool true
 ```
 
-### <a id="isappenvtesting"></a>IsAppEnvTesting · readonly
+### <a id="isappenvtesting"></a>IsAppEnvTesting
 
 IsAppEnvTesting reports whether APP_ENV is "testing" or the process looks like `go test`.
 
@@ -241,7 +241,7 @@ env.Dump(env.IsAppEnvTesting())
 // #bool false (outside of test binaries)
 ```
 
-### <a id="isappenvtestingorlocal"></a>IsAppEnvTestingOrLocal · readonly
+### <a id="isappenvtestingorlocal"></a>IsAppEnvTestingOrLocal
 
 IsAppEnvTestingOrLocal checks if APP_ENV is "testing" or "local".
 
@@ -305,7 +305,7 @@ env.Dump(env.GetAppEnv())
 
 ## Container detection
 
-### <a id="iscontainer"></a>IsContainer · readonly
+### <a id="iscontainer"></a>IsContainer
 
 IsContainer detects common container runtimes (Docker, containerd, Kubernetes, Podman).
 
@@ -317,7 +317,7 @@ env.Dump(env.IsContainer())
 // #bool false (on bare-metal/VM hosts)
 ```
 
-### <a id="isdocker"></a>IsDocker · readonly
+### <a id="isdocker"></a>IsDocker
 
 IsDocker reports whether the current process is running in a Docker container.
 
@@ -328,7 +328,7 @@ env.Dump(env.IsDocker())
 // #bool false (unless inside Docker)
 ```
 
-### <a id="isdockerhost"></a>IsDockerHost · readonly
+### <a id="isdockerhost"></a>IsDockerHost
 
 IsDockerHost reports whether this container behaves like a Docker host.
 
@@ -338,7 +338,7 @@ env.Dump(env.IsDockerHost())
 // #bool false (for normal containers/hosts)
 ```
 
-### <a id="isdockerindocker"></a>IsDockerInDocker · readonly
+### <a id="isdockerindocker"></a>IsDockerInDocker
 
 IsDockerInDocker reports whether we are inside a Docker-in-Docker environment.
 
@@ -348,7 +348,7 @@ env.Dump(env.IsDockerInDocker())
 // #bool false (on hosts or non-DinD containers)
 ```
 
-### <a id="ishostenvironment"></a>IsHostEnvironment · readonly
+### <a id="ishostenvironment"></a>IsHostEnvironment
 
 IsHostEnvironment reports whether the process is running *outside* any
 container or orchestrated runtime.
@@ -359,7 +359,7 @@ env.Dump(env.IsHostEnvironment())
 // #bool false (inside containers)
 ```
 
-### <a id="iskubernetes"></a>IsKubernetes · readonly
+### <a id="iskubernetes"></a>IsKubernetes
 
 IsKubernetes reports whether the process is running inside Kubernetes.
 
@@ -371,7 +371,7 @@ env.Dump(env.IsKubernetes())
 
 ## Debugging
 
-### <a id="dump"></a>Dump · readonly
+### <a id="dump"></a>Dump
 
 Dump is a convenience function that calls godump.Dump.
 
@@ -400,7 +400,7 @@ env.Dump("status", map[string]int{"ok": 1, "fail": 0})
 
 ## Environment loading
 
-### <a id="isenvloaded"></a>IsEnvLoaded · readonly
+### <a id="isenvloaded"></a>IsEnvLoaded
 
 IsEnvLoaded reports whether LoadEnvFileIfExists was executed in this process.
 
@@ -439,7 +439,7 @@ env.Dump(os.Getenv("SERVICE"))
 
 ## Runtime
 
-### <a id="arch"></a>Arch · readonly
+### <a id="arch"></a>Arch
 
 Arch returns the CPU architecture the binary is running on.
 
@@ -451,7 +451,7 @@ env.Dump(env.Arch())
 // #string "arm64"
 ```
 
-### <a id="isbsd"></a>IsBSD · readonly
+### <a id="isbsd"></a>IsBSD
 
 IsBSD reports whether the runtime OS is any BSD variant.
 
@@ -461,7 +461,7 @@ env.Dump(env.IsBSD())
 // #bool false (elsewhere)
 ```
 
-### <a id="iscontaineros"></a>IsContainerOS · readonly
+### <a id="iscontaineros"></a>IsContainerOS
 
 IsContainerOS reports whether this OS is *typically* used as a container base.
 
@@ -471,7 +471,7 @@ env.Dump(env.IsContainerOS())
 // #bool false (on macOS/Windows)
 ```
 
-### <a id="islinux"></a>IsLinux · readonly
+### <a id="islinux"></a>IsLinux
 
 IsLinux reports whether the runtime OS is Linux.
 
@@ -481,7 +481,7 @@ env.Dump(env.IsLinux())
 // #bool false (on other OSes)
 ```
 
-### <a id="ismac"></a>IsMac · readonly
+### <a id="ismac"></a>IsMac
 
 IsMac reports whether the runtime OS is macOS (Darwin).
 
@@ -491,7 +491,7 @@ env.Dump(env.IsMac())
 // #bool false (elsewhere)
 ```
 
-### <a id="isunix"></a>IsUnix · readonly
+### <a id="isunix"></a>IsUnix
 
 IsUnix reports whether the OS is Unix-like.
 
@@ -501,7 +501,7 @@ env.Dump(env.IsUnix())
 // #bool false (e.g., on Windows or Plan 9)
 ```
 
-### <a id="iswindows"></a>IsWindows · readonly
+### <a id="iswindows"></a>IsWindows
 
 IsWindows reports whether the runtime OS is Windows.
 
@@ -511,7 +511,7 @@ env.Dump(env.IsWindows())
 // #bool false (elsewhere)
 ```
 
-### <a id="os"></a>OS · readonly
+### <a id="os"></a>OS
 
 OS returns the current operating system identifier.
 
@@ -526,7 +526,7 @@ env.Dump(env.OS())
 
 ## Typed getters
 
-### <a id="get"></a>Get · readonly
+### <a id="get"></a>Get
 
 Get returns the environment variable for key or fallback when empty.
 
@@ -548,7 +548,7 @@ env.Dump(host)
 // #string "db.internal"
 ```
 
-### <a id="getbool"></a>GetBool · readonly
+### <a id="getbool"></a>GetBool
 
 GetBool parses a boolean from an environment variable or fallback string.
 
@@ -570,7 +570,7 @@ env.Dump(debug)
 // #bool false
 ```
 
-### <a id="getduration"></a>GetDuration · readonly
+### <a id="getduration"></a>GetDuration
 
 GetDuration parses a Go duration string (e.g. "5s", "10m", "1h").
 
@@ -592,7 +592,7 @@ env.Dump(timeout)
 // #time.Duration 5s
 ```
 
-### <a id="getenum"></a>GetEnum · readonly
+### <a id="getenum"></a>GetEnum
 
 GetEnum ensures the environment variable's value is in the allowed list.
 
@@ -614,7 +614,7 @@ env.Dump(appEnv)
 // #string "local"
 ```
 
-### <a id="getfloat"></a>GetFloat · readonly
+### <a id="getfloat"></a>GetFloat
 
 GetFloat parses a float64 from an environment variable or fallback string.
 
@@ -636,7 +636,7 @@ env.Dump(threshold)
 // #float64 0.75
 ```
 
-### <a id="getint"></a>GetInt · readonly
+### <a id="getint"></a>GetInt
 
 GetInt parses an int from an environment variable or fallback string.
 
@@ -658,7 +658,7 @@ env.Dump(port)
 // #int 8080
 ```
 
-### <a id="getint64"></a>GetInt64 · readonly
+### <a id="getint64"></a>GetInt64
 
 GetInt64 parses an int64 from an environment variable or fallback string.
 
@@ -680,7 +680,7 @@ env.Dump(size)
 // #int64 512
 ```
 
-### <a id="getmap"></a>GetMap · readonly
+### <a id="getmap"></a>GetMap
 
 GetMap parses key=value pairs separated by commas into a map.
 
@@ -706,7 +706,7 @@ env.Dump(limits)
 // #map[string]string []
 ```
 
-### <a id="getslice"></a>GetSlice · readonly
+### <a id="getslice"></a>GetSlice
 
 GetSlice splits a comma-separated string into a []string with trimming.
 
@@ -731,7 +731,7 @@ env.Dump(peers)
 // #[]string []
 ```
 
-### <a id="getuint"></a>GetUint · readonly
+### <a id="getuint"></a>GetUint
 
 GetUint parses a uint from an environment variable or fallback string.
 
@@ -753,7 +753,7 @@ env.Dump(workers)
 // #uint 16
 ```
 
-### <a id="getuint64"></a>GetUint64 · readonly
+### <a id="getuint64"></a>GetUint64
 
 GetUint64 parses a uint64 from an environment variable or fallback string.
 
