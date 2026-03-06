@@ -333,6 +333,71 @@ func GetMap(key, fallback string) map[string]string {
 	return m
 }
 
+// GetMapInt parses key=int pairs separated by commas into a map.
+// Invalid, missing, or non-positive values fall back to defaultValue.
+// @group Typed getters
+// @behavior readonly
+//
+// Example: parse worker queue weights
+//
+//	_ = os.Setenv("QUEUE_WEIGHTS", "critical=6, default=3, low=1")
+//	weights := env.GetMapInt("QUEUE_WEIGHTS", "", 1)
+//	env.Dump(weights)
+//	// #map[string]int [
+//	//  "critical" => 6 #int
+//	//  "default"  => 3 #int
+//	//  "low"      => 1 #int
+//	// ]
+//
+// Example: invalid values use defaultValue
+//
+//	os.Unsetenv("QUEUE_WEIGHTS")
+//	weights = env.GetMapInt("QUEUE_WEIGHTS", "critical=,default=0,low=nope,misc", 2)
+//	env.Dump(weights)
+//	// #map[string]int [
+//	//  "critical" => 2 #int
+//	//  "default"  => 2 #int
+//	//  "low"      => 2 #int
+//	//  "misc"     => 2 #int
+//	// ]
+func GetMapInt(key, fallback string, defaultValue int) map[string]int {
+	val := Get(key, fallback)
+	m := map[string]int{}
+
+	if defaultValue <= 0 {
+		defaultValue = 1
+	}
+
+	if strings.TrimSpace(val) == "" {
+		return m
+	}
+
+	pairs := strings.Split(val, ",")
+	for _, p := range pairs {
+		entry := strings.TrimSpace(p)
+		if entry == "" {
+			continue
+		}
+
+		kv := strings.SplitN(entry, "=", 2)
+		name := strings.TrimSpace(kv[0])
+		if name == "" {
+			continue
+		}
+
+		parsed := defaultValue
+		if len(kv) == 2 {
+			if n, err := strconv.Atoi(strings.TrimSpace(kv[1])); err == nil && n > 0 {
+				parsed = n
+			}
+		}
+
+		m[name] = parsed
+	}
+
+	return m
+}
+
 // GetEnum ensures the environment variable's value is in the allowed list.
 // @group Typed getters
 // @behavior readonly

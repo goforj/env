@@ -109,6 +109,57 @@ func TestGetMap(t *testing.T) {
 	})
 }
 
+func TestGetMapInt(t *testing.T) {
+	t.Run("parses valid values", func(t *testing.T) {
+		withEnv("QUEUE_WEIGHTS", "critical=6, default=3, low=1", func() {
+			got := GetMapInt("QUEUE_WEIGHTS", "", 1)
+			expected := map[string]int{"critical": 6, "default": 3, "low": 1}
+			if !reflect.DeepEqual(got, expected) {
+				t.Fatalf("expected %v, got %v", expected, got)
+			}
+		})
+	})
+
+	t.Run("applies default for missing invalid or non-positive values", func(t *testing.T) {
+		withEnv("QUEUE_WEIGHTS", "critical=, default=0, low=nope, misc", func() {
+			got := GetMapInt("QUEUE_WEIGHTS", "", 2)
+			expected := map[string]int{"critical": 2, "default": 2, "low": 2, "misc": 2}
+			if !reflect.DeepEqual(got, expected) {
+				t.Fatalf("expected %v, got %v", expected, got)
+			}
+		})
+	})
+
+	t.Run("uses fallback string when env is unset", func(t *testing.T) {
+		withEnv("QUEUE_WEIGHTS", "", func() {
+			got := GetMapInt("QUEUE_WEIGHTS", "critical=9,default=4", 1)
+			expected := map[string]int{"critical": 9, "default": 4}
+			if !reflect.DeepEqual(got, expected) {
+				t.Fatalf("expected %v, got %v", expected, got)
+			}
+		})
+	})
+
+	t.Run("blank input returns empty map", func(t *testing.T) {
+		withEnv("QUEUE_WEIGHTS", "   ", func() {
+			got := GetMapInt("QUEUE_WEIGHTS", "", 1)
+			if len(got) != 0 {
+				t.Fatalf("expected empty map, got %v", got)
+			}
+		})
+	})
+
+	t.Run("non-positive default value is normalized to one", func(t *testing.T) {
+		withEnv("QUEUE_WEIGHTS", "critical=0,default=nope", func() {
+			got := GetMapInt("QUEUE_WEIGHTS", "", 0)
+			expected := map[string]int{"critical": 1, "default": 1}
+			if !reflect.DeepEqual(got, expected) {
+				t.Fatalf("expected %v, got %v", expected, got)
+			}
+		})
+	})
+}
+
 func TestGetEnum(t *testing.T) {
 	withEnv("APP_ENV", "staging", func() {
 		got := GetEnum("APP_ENV", "local", []string{"local", "staging", "production"})

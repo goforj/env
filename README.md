@@ -144,7 +144,7 @@ Later files override earlier values. Subsequent calls are no-ops.
 | **Debugging** | [Dump](#dump) |
 | **Environment loading** | [IsEnvLoaded](#isenvloaded) [LoadEnvFileIfExists](#loadenvfileifexists) |
 | **Runtime** | [Arch](#arch) [IsBSD](#isbsd) [IsContainerOS](#iscontaineros) [IsLinux](#islinux) [IsMac](#ismac) [IsUnix](#isunix) [IsWindows](#iswindows) [OS](#os) |
-| **Typed getters** | [Get](#get) [GetBool](#getbool) [GetDuration](#getduration) [GetEnum](#getenum) [GetFloat](#getfloat) [GetInt](#getint) [GetInt64](#getint64) [GetMap](#getmap) [GetSlice](#getslice) [GetUint](#getuint) [GetUint64](#getuint64) [MustGet](#mustget) [MustGetBool](#mustgetbool) [MustGetInt](#mustgetint) |
+| **Typed getters** | [Get](#get) [GetBool](#getbool) [GetDuration](#getduration) [GetEnum](#getenum) [GetFloat](#getfloat) [GetInt](#getint) [GetInt64](#getint64) [GetMap](#getmap) [GetMapInt](#getmapint) [GetSlice](#getslice) [GetUint](#getuint) [GetUint64](#getuint64) [MustGet](#mustget) [MustGetBool](#mustgetbool) [MustGetInt](#mustgetint) |
 
 
 ## Application environment
@@ -704,6 +704,38 @@ os.Unsetenv("LIMITS")
 limits = env.GetMap("LIMITS", "")
 env.Dump(limits)
 // #map[string]string []
+```
+
+### <a id="getmapint"></a>GetMapInt
+
+GetMapInt parses key=int pairs separated by commas into a map.
+Invalid, missing, or non-positive values fall back to defaultValue.
+
+_Example: parse worker queue weights_
+
+```go
+_ = os.Setenv("QUEUE_WEIGHTS", "critical=6, default=3, low=1")
+weights := env.GetMapInt("QUEUE_WEIGHTS", "", 1)
+env.Dump(weights)
+// #map[string]int [
+//  "critical" => 6 #int
+//  "default"  => 3 #int
+//  "low"      => 1 #int
+// ]
+```
+
+_Example: invalid values use defaultValue_
+
+```go
+os.Unsetenv("QUEUE_WEIGHTS")
+weights = env.GetMapInt("QUEUE_WEIGHTS", "critical=,default=0,low=nope,misc", 2)
+env.Dump(weights)
+// #map[string]int [
+//  "critical" => 2 #int
+//  "default"  => 2 #int
+//  "low"      => 2 #int
+//  "misc"     => 2 #int
+// ]
 ```
 
 ### <a id="getslice"></a>GetSlice
