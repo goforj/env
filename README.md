@@ -38,7 +38,7 @@ Accessing environment variables in Go often leads to:
 - Inconsistent defaults
 - Scattered app environment checks
 
-**env** solves this by providing **typed accessors with fallbacks**, so configuration stays boring and predictable.
+env solves this by providing typed accessors with fallbacks, so configuration stays boring and predictable.
 
 ## Installation
 
