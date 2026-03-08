@@ -84,26 +84,26 @@ func main() {
 
 See [examples/kitchensink/main.go](examples/kitchensink/main.go) for a runnable program that exercises almost every helper (env loading, typed getters, must-getters, runtime + container detection, and the `env.Dump` wrapper) with deterministic godump output.
 
-## Environment loading overview
+## Environment loading
 
-LoadEnvFileIfExists layers env files in a predictable order:
+LoadEnvFileIfExists loads env files in this order:
 
-- `.env` is loaded first.
-- `.env.local`, `.env.staging`, or `.env.production` overlays based on `APP_ENV` (defaults to `local` when unset).
-- `.env.testing` overlays when running under tests (APP_ENV=testing or Go test markers).
-- `.env.host` overlays when running on the host or DinD to support host-to-container networking.
+- `.env`
+- `.env.local`, `.env.staging`, or `.env.production`, based on `APP_ENV` (`local` by default)
+- `.env.testing` when running under tests
+- `.env.host` when running on the host or DinD
 
-Later files override earlier values. Subsequent calls are no-ops.
+Later files override earlier ones. Repeated calls are no-ops.
 
-## Container detection at a glance
+## Container detection
 
 | Check | True when | Notes |
 |-------|-----------|-------|
-| `IsDocker` | `/.dockerenv` or Docker cgroup markers | Generic Docker container |
-| `IsDockerInDocker` | `/.dockerenv` **and** `docker.sock` | Inner DinD container |
-| `IsDockerHost` | `docker.sock` present, no container cgroups | Host or DinD outer acting as host |
-| `IsContainer` | Any common container signals (Docker, containerd, kube env/cgroup) | General container detection |
-| `IsKubernetes` | `KUBERNETES_SERVICE_HOST` or kubepods cgroup | Inside a Kubernetes pod |
+| IsDocker | /.dockerenv or Docker cgroup markers | Generic Docker container |
+| IsDockerInDocker | /.dockerenv and docker.sock | Inner DinD container |
+| IsDockerHost | docker.sock present, no container cgroups | Host or DinD outer acting as host |
+| IsContainer | Any common container signals (Docker, containerd, kube env/cgroup) | General container detection |
+| IsKubernetes | KUBERNETES_SERVICE_HOST or kubepods cgroup | Inside a Kubernetes pod |
 
 ## Runnable examples
 
