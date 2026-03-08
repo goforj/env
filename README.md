@@ -16,13 +16,9 @@
     <a href="https://goreportcard.com/report/github.com/goforj/env/v2"><img src="https://goreportcard.com/badge/github.com/goforj/env/v2" alt="Go Report Card"></a>
 </p>
 
-<p align="center">
-  <code>env</code> provides strongly-typed access to environment variables with predictable fallbacks.  
-  Eliminate string parsing, centralize app environment checks, and keep configuration boring.  
-  Designed to feel native to Go - and invisible when things are working.
-</p>
-
 # Features
+
+**env** provides strongly-typed access to environment variables with predictable fallbacks. Eliminate string parsing, centralize app environment checks, and keep configuration boring. Designed to feel native to Go - and invisible when things are working.
 
 - **Strongly typed getters** - `int`, `bool`, `float`, `duration`, slices, maps
 - **Safe fallbacks** - never panic, never accidentally empty
@@ -43,14 +39,6 @@ Accessing environment variables in Go often leads to:
 - Scattered app environment checks
 
 **env** solves this by providing **typed accessors with fallbacks**, so configuration stays boring and predictable.
-
-## Features
-
-- Strongly typed getters (`int`, `bool`, `duration`, slices, maps)
-- Safe fallbacks (never panic, never empty by accident)
-- App environment helpers (`local`, `staging`, `production`)
-- Zero dependencies
-- Framework-agnostic
 
 ## Installation
 
@@ -96,21 +84,16 @@ func main() {
 
 See [examples/kitchensink/main.go](examples/kitchensink/main.go) for a runnable program that exercises almost every helper (env loading, typed getters, must-getters, runtime + container detection, and the `env.Dump` wrapper) with deterministic godump output.
 
-## Environment file loading
+## Environment loading overview
 
-This package uses `github.com/joho/godotenv` for `.env` file loading.
+LoadEnvFileIfExists layers env files in a predictable order:
 
-It is intentionally composed into the runtime detection and APP_ENV model rather than reimplemented.
+- `.env` is loaded first.
+- `.env.local`, `.env.staging`, or `.env.production` overlays based on `APP_ENV` (defaults to `local` when unset).
+- `.env.testing` overlays when running under tests (APP_ENV=testing or Go test markers).
+- `.env.host` overlays when running on the host or DinD to support host-to-container networking.
 
-## Runnable examples
-
-Every function has a corresponding runnable example under [`./examples`](./examples).
-
-These examples are **generated directly from the documentation blocks** of each function, ensuring the docs and code never drift. These are the same examples you see here in the README and GoDoc.
-
-An automated test executes **every example** to verify it builds and runs successfully.
-
-This guarantees all examples are valid, up-to-date, and remain functional as the API evolves.
+Later files override earlier values. Subsequent calls are no-ops.
 
 ## Container detection at a glance
 
@@ -122,16 +105,27 @@ This guarantees all examples are valid, up-to-date, and remain functional as the
 | `IsContainer` | Any common container signals (Docker, containerd, kube env/cgroup) | General container detection |
 | `IsKubernetes` | `KUBERNETES_SERVICE_HOST` or kubepods cgroup | Inside a Kubernetes pod |
 
-## Environment loading overview
+## Runnable examples
 
-LoadEnvFileIfExists layers env files in a predictable order:
+Every function has a corresponding runnable example under [`./examples`](./examples).
 
-- `.env` is loaded first.
-- `.env.local`, `.env.staging`, or `.env.production` overlays based on `APP_ENV` (defaults to `local` when unset).
-- `.env.testing` overlays when running under tests (APP_ENV=testing or Go test markers).
-- `.env.host` overlays when running on the host or DinD to support host-to-container networking.
+These examples are **generated directly from the documentation blocks** of each function, ensuring the docs and code never drift. These are the same examples you see here in the README and GoDoc.
 
-Later files override earlier values. Subsequent calls are no-ops.
+An automated test executes **every example** to verify it builds and runs successfully.
+
+This guarantees all examples are valid, up-to-date, and remain functional as the API evolves.
+
+## Environment file loading
+
+This package uses `github.com/joho/godotenv` for `.env` file loading.
+
+It is intentionally composed into the runtime detection and APP_ENV model rather than reimplemented.
+
+## Philosophy
+
+**env** is part of the **GoForj toolchain** - a collection of focused, composable packages designed to make building Go applications *satisfying*.
+
+No magic. No globals. No surprises.
 
 <!-- api:embed:start -->
 
@@ -867,12 +861,6 @@ _ = os.Setenv("PORT", "not-a-number")
 _ = env.MustGetInt("PORT") // panics when parsing
 ```
 <!-- api:embed:end -->
-
-## Philosophy
-
-**env** is part of the **GoForj toolchain** - a collection of focused, composable packages designed to make building Go applications *satisfying*.
-
-No magic. No globals. No surprises.
 
 ## License
 
