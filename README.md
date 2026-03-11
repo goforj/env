@@ -80,6 +80,60 @@ func main() {
 }
 ```
 
+## Scoped prefixes
+
+Use `Scope` when a group of related settings share a common prefix and may also expose named child configs.
+
+```go
+package main
+
+import (
+	"os"
+
+	"github.com/goforj/env/v2"
+)
+
+func main() {
+	_ = os.Setenv("STORAGE_DRIVER", "local")
+	_ = os.Setenv("STORAGE_ROOT", "storage/app/private")
+	_ = os.Setenv("STORAGE_PUBLIC_DRIVER", "local")
+	_ = os.Setenv("STORAGE_PUBLIC_ROOT", "storage/app/public")
+	_ = os.Setenv("STORAGE_AVATARS_DRIVER", "s3")
+	_ = os.Setenv("STORAGE_AVATARS_BUCKET", "my-bucket")
+	_ = os.Setenv("STORAGE_AVATARS_REGION", "us-east-1")
+
+	storage := env.WithPrefix("STORAGE")
+
+	// Root/default config reads STORAGE_* keys.
+	driver := storage.Get("DRIVER", "local")
+	root := storage.Get("ROOT", "storage/app/private")
+
+	public := storage.Child("PUBLIC")
+
+	// Child scopes compose STORAGE_<NAME>_* keys.
+	publicDriver := public.Get("DRIVER", "local")
+	publicRoot := public.Get("ROOT", "storage/app/public")
+
+	// ChildNames discovers named children while ignoring root keys.
+	names := storage.ChildNames([]string{
+		"DRIVER",
+		"ROOT",
+		"BUCKET",
+		"REGION",
+	})
+
+	env.Dump(driver, root, publicDriver, publicRoot, names)
+	// #string "local"
+	// #string "storage/app/private"
+	// #string "local"
+	// #string "storage/app/public"
+	// #[]string [
+	//  0 => "AVATARS" #string
+	//  1 => "PUBLIC" #string
+	// ]
+}
+```
+
 ### Full kitchen-sink example
 
 See [examples/kitchensink/main.go](examples/kitchensink/main.go) for a runnable program that exercises almost every helper (env loading, typed getters, must-getters, runtime + container detection, and the `env.Dump` wrapper) with deterministic godump output.
@@ -137,8 +191,9 @@ No magic. No globals. No surprises.
 | **Container detection** | [IsContainer](#iscontainer) [IsDocker](#isdocker) [IsDockerHost](#isdockerhost) [IsDockerInDocker](#isdockerindocker) [IsHostEnvironment](#ishostenvironment) [IsKubernetes](#iskubernetes) |
 | **Debugging** | [Dump](#dump) |
 | **Environment loading** | [IsEnvLoaded](#isenvloaded) [LoadEnvFileIfExists](#loadenvfileifexists) |
+| **Other** | [Key](#key) |
 | **Runtime** | [Arch](#arch) [IsBSD](#isbsd) [IsContainerOS](#iscontaineros) [IsLinux](#islinux) [IsMac](#ismac) [IsUnix](#isunix) [IsWindows](#iswindows) [OS](#os) |
-| **Typed getters** | [Get](#get) [GetBool](#getbool) [GetDuration](#getduration) [GetEnum](#getenum) [GetFloat](#getfloat) [GetInt](#getint) [GetInt64](#getint64) [GetMap](#getmap) [GetMapInt](#getmapint) [GetSlice](#getslice) [GetUint](#getuint) [GetUint64](#getuint64) [MustGet](#mustget) [MustGetBool](#mustgetbool) [MustGetInt](#mustgetint) |
+| **Typed getters** | [Child](#child) [ChildNames](#childnames) [Get](#get) [GetBool](#getbool) [GetDuration](#getduration) [GetEnum](#getenum) [GetFloat](#getfloat) [GetInt](#getint) [GetInt64](#getint64) [GetMap](#getmap) [GetMapInt](#getmapint) [GetSlice](#getslice) [GetUint](#getuint) [GetUint64](#getuint64) [MustGet](#mustget) [MustGetBool](#mustgetbool) [MustGetInt](#mustgetint) [WithPrefix](#withprefix) |
 
 
 ## Application environment
@@ -431,6 +486,12 @@ env.Dump(os.Getenv("SERVICE"))
 // #string "api"
 ```
 
+## Other
+
+### <a id="key"></a>Key
+
+Key builds the fully qualified environment key for key within the scope.
+
 ## Runtime
 
 ### <a id="arch"></a>Arch
@@ -519,6 +580,50 @@ env.Dump(env.OS())
 ```
 
 ## Typed getters
+
+### <a id="child"></a>Child
+
+Child returns a new scope rooted at the current prefix plus name.
+
+_Example: named child scope_
+
+```go
+_ = os.Setenv("STORAGE_PUBLIC_ROOT", "storage/app/public")
+
+public := env.WithPrefix("STORAGE").Child("PUBLIC")
+env.Dump(
+	public.Key("ROOT"),
+	public.Get("ROOT", "storage/app/public"),
+)
+// #string "STORAGE_PUBLIC_ROOT"
+// #string "storage/app/public"
+```
+
+### <a id="childnames"></a>ChildNames
+
+ChildNames discovers named child scopes under the current prefix.
+
+_Example: discover child names_
+
+```go
+_ = os.Setenv("STORAGE_DRIVER", "local")
+_ = os.Setenv("STORAGE_ROOT", "storage/app/private")
+_ = os.Setenv("STORAGE_PUBLIC_ROOT", "storage/app/public")
+_ = os.Setenv("STORAGE_AVATARS_BUCKET", "my-bucket")
+_ = os.Setenv("STORAGE_AVATARS_REGION", "us-east-1")
+
+names := env.WithPrefix("STORAGE").ChildNames([]string{
+	"DRIVER",
+	"ROOT",
+	"BUCKET",
+	"REGION",
+})
+env.Dump(names)
+// #[]string [
+//  0 => "AVATARS" #string
+//  1 => "PUBLIC" #string
+// ]
+```
 
 ### <a id="get"></a>Get
 
@@ -859,6 +964,27 @@ _Example: panic on bad value_
 ```go
 _ = os.Setenv("PORT", "not-a-number")
 _ = env.MustGetInt("PORT") // panics when parsing
+```
+
+### <a id="withprefix"></a>WithPrefix
+
+WithPrefix returns a scope rooted at prefix after minimal normalization.
+
+_Example: root scope access_
+
+```go
+_ = os.Setenv("STORAGE_DRIVER", "local")
+_ = os.Setenv("STORAGE_ROOT", "storage/app/private")
+
+storage := env.WithPrefix(" STORAGE ")
+env.Dump(
+	storage.Key("DRIVER"),
+	storage.Get("DRIVER", "s3"),
+	storage.Get("ROOT", "storage/app/private"),
+)
+// #string "STORAGE_DRIVER"
+// #string "local"
+// #string "storage/app/private"
 ```
 <!-- api:embed:end -->
 
