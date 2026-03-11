@@ -10,7 +10,8 @@ import (
 )
 
 func main() {
-	// LoadEnvFileIfExists is a compatibility alias for Load.
+	// Load loads .env with optional layering for .env.local/.env.staging/.env.production,
+	// plus .env.testing/.env.host when present.
 
 	// Example: test-specific env file
 	tmp, _ := os.MkdirTemp("", "envdoc")
@@ -18,13 +19,13 @@ func main() {
 	_ = os.Chdir(tmp)
 	_ = os.Setenv("APP_ENV", env.Testing)
 
-	_ = env.LoadEnvFileIfExists()
+	_ = env.Load()
 	env.Dump(os.Getenv("PORT"))
 	// #string "9090"
 
 	// Example: default .env on a host
 	_ = os.WriteFile(".env", []byte("SERVICE=api\nENV_DEBUG=3"), 0o644)
-	_ = env.LoadEnvFileIfExists()
+	_ = env.Load()
 	env.Dump(os.Getenv("SERVICE"))
 	// #string "api"
 }

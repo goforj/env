@@ -26,7 +26,7 @@ const (
 // envLoaded is a flag to check if the environment file has been loaded
 var envLoaded = false
 
-// LoadEnvFileIfExists loads .env with optional layering for .env.local/.env.staging/.env.production,
+// Load loads .env with optional layering for .env.local/.env.staging/.env.production,
 // plus .env.testing/.env.host when present.
 // @group Environment loading
 // @behavior mutates-process-env
@@ -45,17 +45,17 @@ var envLoaded = false
 //	_ = os.Chdir(tmp)
 //	_ = os.Setenv("APP_ENV", env.Testing)
 //
-//	_ = env.LoadEnvFileIfExists()
+//	_ = env.Load()
 //	env.Dump(os.Getenv("PORT"))
 //	// #string "9090"
 //
 // Example: default .env on a host
 //
 //	_ = os.WriteFile(".env", []byte("SERVICE=api\nENV_DEBUG=3"), 0o644)
-//	_ = env.LoadEnvFileIfExists()
+//	_ = env.Load()
 //	env.Dump(os.Getenv("SERVICE"))
 //	// #string "api"
-func LoadEnvFileIfExists() error {
+func Load() error {
 	if os.Getenv("APP_ENV") == "" {
 		_ = os.Setenv("APP_ENV", Local)
 	}
@@ -106,6 +106,11 @@ func LoadEnvFileIfExists() error {
 	return nil
 }
 
+// LoadEnvFileIfExists is kept as a compatibility alias for Load.
+func LoadEnvFileIfExists() error {
+	return Load()
+}
+
 // envFileForAppEnv returns the layered env filename for the given APP_ENV.
 func envFileForAppEnv(appEnv string) (string, bool) {
 	switch appEnv {
@@ -120,14 +125,14 @@ func envFileForAppEnv(appEnv string) (string, bool) {
 	}
 }
 
-// IsEnvLoaded reports whether LoadEnvFileIfExists was executed in this process.
+// IsEnvLoaded reports whether Load or LoadEnvFileIfExists was executed in this process.
 // @group Environment loading
 // @behavior readonly
 //
 // Example:
 //
 //	env.Dump(env.IsEnvLoaded())
-//	// #bool true  (after LoadEnvFileIfExists)
+//	// #bool true  (after Load)
 //	// #bool false (otherwise)
 func IsEnvLoaded() bool {
 	return envLoaded

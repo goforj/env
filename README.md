@@ -59,7 +59,7 @@ import (
 )
 
 func init() {
-	if err := env.LoadEnvFileIfExists(); err != nil {
+	if err := env.Load(); err != nil {
 		log.Fatalf("load env: %v", err)
 	}
 }
@@ -140,7 +140,7 @@ See [examples/kitchensink/main.go](examples/kitchensink/main.go) for a runnable 
 
 ## Environment loading
 
-LoadEnvFileIfExists loads env files in this order:
+Load loads env files in this order:
 
 - `.env`
 - `.env.local`, `.env.staging`, or `.env.production`, based on `APP_ENV` (`local` by default)
@@ -190,7 +190,7 @@ No magic. No globals. No surprises.
 | **Application environment** | [GetAppEnv](#getappenv) [IsAppEnv](#isappenv) [IsAppEnvLocal](#isappenvlocal) [IsAppEnvLocalOrStaging](#isappenvlocalorstaging) [IsAppEnvProduction](#isappenvproduction) [IsAppEnvStaging](#isappenvstaging) [IsAppEnvTesting](#isappenvtesting) [IsAppEnvTestingOrLocal](#isappenvtestingorlocal) [SetAppEnv](#setappenv) [SetAppEnvLocal](#setappenvlocal) [SetAppEnvProduction](#setappenvproduction) [SetAppEnvStaging](#setappenvstaging) [SetAppEnvTesting](#setappenvtesting) |
 | **Container detection** | [IsContainer](#iscontainer) [IsDocker](#isdocker) [IsDockerHost](#isdockerhost) [IsDockerInDocker](#isdockerindocker) [IsHostEnvironment](#ishostenvironment) [IsKubernetes](#iskubernetes) |
 | **Debugging** | [Dump](#dump) |
-| **Environment loading** | [IsEnvLoaded](#isenvloaded) [LoadEnvFileIfExists](#loadenvfileifexists) |
+| **Environment loading** | [IsEnvLoaded](#isenvloaded) [Load](#load) [LoadEnvFileIfExists](#loadenvfileifexists) |
 | **Other** | [Key](#key) |
 | **Runtime** | [Arch](#arch) [IsBSD](#isbsd) [IsContainerOS](#iscontaineros) [IsLinux](#islinux) [IsMac](#ismac) [IsUnix](#isunix) [IsWindows](#iswindows) [OS](#os) |
 | **Typed getters** | [Child](#child) [ChildNames](#childnames) [Get](#get) [GetBool](#getbool) [GetDuration](#getduration) [GetEnum](#getenum) [GetFloat](#getfloat) [GetInt](#getint) [GetInt64](#getint64) [GetMap](#getmap) [GetMapInt](#getmapint) [GetSlice](#getslice) [GetUint](#getuint) [GetUint64](#getuint64) [MustGet](#mustget) [MustGetBool](#mustgetbool) [MustGetInt](#mustgetint) [WithPrefix](#withprefix) |
@@ -451,17 +451,17 @@ env.Dump("status", map[string]int{"ok": 1, "fail": 0})
 
 ### <a id="isenvloaded"></a>IsEnvLoaded
 
-IsEnvLoaded reports whether LoadEnvFileIfExists was executed in this process.
+IsEnvLoaded reports whether Load or LoadEnvFileIfExists was executed in this process.
 
 ```go
 env.Dump(env.IsEnvLoaded())
-// #bool true  (after LoadEnvFileIfExists)
+// #bool true  (after Load)
 // #bool false (otherwise)
 ```
 
-### <a id="loadenvfileifexists"></a>LoadEnvFileIfExists · mutates-process-env
+### <a id="load"></a>Load · mutates-process-env
 
-LoadEnvFileIfExists loads .env with optional layering for .env.local/.env.staging/.env.production,
+Load loads .env with optional layering for .env.local/.env.staging/.env.production,
 plus .env.testing/.env.host when present.
 
 _Example: test-specific env file_
@@ -472,7 +472,7 @@ _ = os.WriteFile(filepath.Join(tmp, ".env.testing"), []byte("PORT=9090\nENV_DEBU
 _ = os.Chdir(tmp)
 _ = os.Setenv("APP_ENV", env.Testing)
 
-_ = env.LoadEnvFileIfExists()
+_ = env.Load()
 env.Dump(os.Getenv("PORT"))
 // #string "9090"
 ```
@@ -481,10 +481,14 @@ _Example: default .env on a host_
 
 ```go
 _ = os.WriteFile(".env", []byte("SERVICE=api\nENV_DEBUG=3"), 0o644)
-_ = env.LoadEnvFileIfExists()
+_ = env.Load()
 env.Dump(os.Getenv("SERVICE"))
 // #string "api"
 ```
+
+### <a id="loadenvfileifexists"></a>LoadEnvFileIfExists · mutates-process-env
+
+LoadEnvFileIfExists is a compatibility alias for [Load](#load).
 
 ## Other
 

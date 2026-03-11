@@ -47,7 +47,7 @@ type snapshot struct {
 
 func main() {
 	// Load env files if present
-	if err := env.LoadEnvFileIfExists(); err != nil {
+	if err := env.Load(); err != nil {
 		log.Fatalf("load env: %v", err)
 	}
 
