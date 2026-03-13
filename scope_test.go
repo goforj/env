@@ -93,6 +93,46 @@ func TestScopeChildNames(t *testing.T) {
 	}
 }
 
+func TestScopeChildNamesWithMultiWordChildrenAndRootKeys(t *testing.T) {
+	keys := []string{
+		"CACHE_DRIVER",
+		"CACHE_PAGE_CACHE_DRIVER",
+		"CACHE_PAGE_CACHE_FILE_DIR",
+		"CACHE_USER_SESSIONS_DEFAULT_TTL_SECONDS",
+		"STORAGE_PUBLIC_S3_ACCESS_KEY_ID",
+		"STORAGE_PUBLIC_S3_SECRET_ACCESS_KEY",
+	}
+
+	restore := snapshotEnv(keys)
+	defer restore()
+
+	_ = os.Setenv("CACHE_DRIVER", "memory")
+	_ = os.Setenv("CACHE_PAGE_CACHE_DRIVER", "file")
+	_ = os.Setenv("CACHE_PAGE_CACHE_FILE_DIR", "/tmp/page-cache")
+	_ = os.Setenv("CACHE_USER_SESSIONS_DEFAULT_TTL_SECONDS", "60")
+	_ = os.Setenv("STORAGE_PUBLIC_S3_ACCESS_KEY_ID", "access")
+	_ = os.Setenv("STORAGE_PUBLIC_S3_SECRET_ACCESS_KEY", "secret")
+
+	cacheNames := WithPrefix("CACHE").ChildNames([]string{
+		"DRIVER",
+		"FILE_DIR",
+		"DEFAULT_TTL_SECONDS",
+	})
+	expectedCache := []string{"PAGE_CACHE", "USER_SESSIONS"}
+	if !reflect.DeepEqual(cacheNames, expectedCache) {
+		t.Fatalf("expected cache child names %v, got %v", expectedCache, cacheNames)
+	}
+
+	storageNames := WithPrefix("STORAGE").ChildNames([]string{
+		"ACCESS_KEY_ID",
+		"SECRET_ACCESS_KEY",
+	})
+	expectedStorage := []string{"PUBLIC_S3"}
+	if !reflect.DeepEqual(storageNames, expectedStorage) {
+		t.Fatalf("expected storage child names %v, got %v", expectedStorage, storageNames)
+	}
+}
+
 func TestScopeChildNamesEmptyPrefix(t *testing.T) {
 	if got := WithPrefix("___").ChildNames([]string{"ROOT"}); len(got) != 0 {
 		t.Fatalf("expected empty names, got %v", got)

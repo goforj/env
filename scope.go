@@ -103,13 +103,21 @@ func (s Scope) ChildNames(rootKeys []string) []string {
 	}
 
 	rootKeySet := make(map[string]struct{}, len(rootKeys))
+	normalizedRootKeys := make([]string, 0, len(rootKeys))
 	for _, key := range rootKeys {
 		normalized := normalizeScopeSegment(key)
 		if normalized == "" {
 			continue
 		}
 		rootKeySet[normalized] = struct{}{}
+		normalizedRootKeys = append(normalizedRootKeys, normalized)
 	}
+	sort.Slice(normalizedRootKeys, func(i, j int) bool {
+		if len(normalizedRootKeys[i]) == len(normalizedRootKeys[j]) {
+			return normalizedRootKeys[i] < normalizedRootKeys[j]
+		}
+		return len(normalizedRootKeys[i]) > len(normalizedRootKeys[j])
+	})
 
 	prefix := s.prefix + "_"
 	children := map[string]struct{}{}
@@ -129,12 +137,17 @@ func (s Scope) ChildNames(rootKeys []string) []string {
 			continue
 		}
 
-		child, _, hasNestedKey := strings.Cut(remainder, "_")
-		if !hasNestedKey || child == "" {
-			continue
+		for _, rootKey := range normalizedRootKeys {
+			suffix := "_" + rootKey
+			if !strings.HasSuffix(remainder, suffix) {
+				continue
+			}
+			child := strings.TrimSuffix(remainder, suffix)
+			if child != "" {
+				children[child] = struct{}{}
+			}
+			break
 		}
-
-		children[child] = struct{}{}
 	}
 
 	names := make([]string, 0, len(children))
