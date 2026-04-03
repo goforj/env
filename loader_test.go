@@ -8,6 +8,7 @@ import (
 )
 
 func TestLoad_testingEnv(t *testing.T) {
+	loadedEnvKeys = map[string]struct{}{}
 	tempDir := t.TempDir()
 	dotEnvFile := tempDir + "/.env.testing"
 	baseEnvFile := tempDir + "/.env"
@@ -62,6 +63,7 @@ func TestLoad_NoFile(t *testing.T) {
 	wd, _ := os.Getwd()
 	t.Cleanup(func() {
 		envLoaded = false
+		loadedEnvKeys = map[string]struct{}{}
 		_ = os.Chdir(wd)
 	})
 
@@ -82,6 +84,7 @@ func TestLoad_WithDotEnvHostBranch(t *testing.T) {
 	wd, _ := os.Getwd()
 	t.Cleanup(func() {
 		envLoaded = false
+		loadedEnvKeys = map[string]struct{}{}
 		_ = os.Chdir(wd)
 		_ = os.Unsetenv("HOST_BRANCH")
 	})
@@ -116,7 +119,7 @@ func TestLoad_WithDotEnvHostBranch(t *testing.T) {
 }
 
 func TestLoadEnvFile_NotFound(t *testing.T) {
-	if ok, _ := loadEnvFile("does-not-exist"); ok {
+	if ok, _, _ := loadEnvFile("does-not-exist"); ok {
 		t.Fatalf("expected false when file missing")
 	}
 }
@@ -187,6 +190,7 @@ func TestLoad_LayeredLocal(t *testing.T) {
 	wd, _ := os.Getwd()
 	t.Cleanup(func() {
 		envLoaded = false
+		loadedEnvKeys = map[string]struct{}{}
 		_ = os.Chdir(wd)
 	})
 
@@ -220,6 +224,7 @@ func TestLoad_LayeredStaging(t *testing.T) {
 	wd, _ := os.Getwd()
 	t.Cleanup(func() {
 		envLoaded = false
+		loadedEnvKeys = map[string]struct{}{}
 		_ = os.Chdir(wd)
 	})
 
@@ -250,6 +255,7 @@ func TestLoad_LayeredProduction(t *testing.T) {
 	wd, _ := os.Getwd()
 	t.Cleanup(func() {
 		envLoaded = false
+		loadedEnvKeys = map[string]struct{}{}
 		_ = os.Chdir(wd)
 	})
 
@@ -280,6 +286,7 @@ func TestLoad_NoReload(t *testing.T) {
 	wd, _ := os.Getwd()
 	t.Cleanup(func() {
 		envLoaded = false
+		loadedEnvKeys = map[string]struct{}{}
 		_ = os.Chdir(wd)
 	})
 
@@ -299,10 +306,54 @@ func TestLoad_NoReload(t *testing.T) {
 	}
 }
 
+func TestReload_ReappliesEnvFiles(t *testing.T) {
+	wd, _ := os.Getwd()
+	t.Cleanup(func() {
+		envLoaded = false
+		loadedEnvKeys = map[string]struct{}{}
+		_ = os.Chdir(wd)
+		_ = os.Unsetenv("RELOAD_ME")
+		_ = os.Unsetenv("RELOAD_GONE")
+	})
+
+	tmp := t.TempDir()
+	if err := os.WriteFile(tmp+"/.env", []byte("RELOAD_ME=first\nRELOAD_GONE=present\n"), 0o644); err != nil {
+		t.Fatalf("write .env: %v", err)
+	}
+
+	_ = os.Chdir(tmp)
+	envLoaded = false
+
+	if err := Load(); err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if got := os.Getenv("RELOAD_ME"); got != "first" {
+		t.Fatalf("expected RELOAD_ME=first after Load, got %q", got)
+	}
+	if got := os.Getenv("RELOAD_GONE"); got != "present" {
+		t.Fatalf("expected RELOAD_GONE=present after Load, got %q", got)
+	}
+
+	if err := os.WriteFile(tmp+"/.env", []byte("RELOAD_ME=second\n"), 0o644); err != nil {
+		t.Fatalf("rewrite .env: %v", err)
+	}
+
+	if err := Reload(); err != nil {
+		t.Fatalf("Reload: %v", err)
+	}
+	if got := os.Getenv("RELOAD_ME"); got != "second" {
+		t.Fatalf("expected RELOAD_ME=second after Reload, got %q", got)
+	}
+	if got := os.Getenv("RELOAD_GONE"); got != "" {
+		t.Fatalf("expected RELOAD_GONE to be unset after Reload, got %q", got)
+	}
+}
+
 func TestLoad_DefaultsAppEnv(t *testing.T) {
 	wd, _ := os.Getwd()
 	t.Cleanup(func() {
 		envLoaded = false
+		loadedEnvKeys = map[string]struct{}{}
 		_ = os.Chdir(wd)
 		_ = os.Unsetenv("APP_ENV")
 	})
@@ -324,6 +375,7 @@ func TestLoadEnvFileIfExists_Alias(t *testing.T) {
 	wd, _ := os.Getwd()
 	t.Cleanup(func() {
 		envLoaded = false
+		loadedEnvKeys = map[string]struct{}{}
 		_ = os.Chdir(wd)
 	})
 

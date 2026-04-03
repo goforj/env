@@ -25,9 +25,12 @@ const (
 
 // envLoaded is a flag to check if the environment file has been loaded
 var envLoaded = false
+var loadedEnvKeys = map[string]struct{}{}
 
 // Load loads .env with optional layering for .env.local/.env.staging/.env.production,
-// plus .env.testing/.env.host when present.
+// plus .env.testing/.env.host when present. It only applies once per process;
+// subsequent calls return without reloading because the result is cached. Use
+// Reload to re-read env files after the first load.
 // @group Environment loading
 // @behavior mutates-process-env
 //
@@ -56,12 +59,42 @@ var envLoaded = false
 //	env.Dump(os.Getenv("SERVICE"))
 //	// #string "api"
 func Load() error {
+	return load(false)
+}
+
+// Reload re-applies the same layered env loading as Load, even if Load already
+// ran earlier in the same process.
+// @group Environment loading
+// @behavior mutates-process-env
+//
+// Behavior:
+//   - Sets APP_ENV=local when unset.
+//   - Re-runs the same .env/.env.<app-env>/.env.host/.env.testing layering.
+//   - Uses overload semantics, so reloaded values replace previously loaded ones.
+//
+// Example: refresh changed env files
+//
+//	_ = os.WriteFile(".env", []byte("SERVICE=api"), 0o644)
+//	_ = env.Load()
+//	_ = os.WriteFile(".env", []byte("SERVICE=worker"), 0o644)
+//	_ = env.Reload()
+//	env.Dump(os.Getenv("SERVICE"))
+//	// #string "worker"
+func Reload() error {
+	return load(true)
+}
+
+func load(force bool) error {
+	if force {
+		clearLoadedEnvKeys()
+	}
+
 	if os.Getenv("APP_ENV") == "" {
 		_ = os.Setenv("APP_ENV", Local)
 	}
 
 	// avoid re-loading env files
-	if envLoaded {
+	if envLoaded && !force {
 		return nil
 	}
 
@@ -69,13 +102,15 @@ func Load() error {
 	var loadedFiles []string
 
 	// load top-level .env
-	if ok, path := loadEnvFile(fileEnv); ok {
+	if ok, path, keys := loadEnvFile(fileEnv); ok {
 		loadedFiles = append(loadedFiles, path)
+		recordLoadedEnvKeys(keys)
 	}
 
 	if envFile, ok := envFileForAppEnv(os.Getenv("APP_ENV")); ok {
-		if ok, path := loadEnvFile(envFile); ok {
+		if ok, path, keys := loadEnvFile(envFile); ok {
 			loadedFiles = append(loadedFiles, path)
+			recordLoadedEnvKeys(keys)
 		}
 	}
 
@@ -83,15 +118,17 @@ func Load() error {
 	// we're likely talking from host -> container network
 	// used from IDEs
 	if IsHostEnvironment() || IsDockerInDocker() {
-		if ok, path := loadEnvFile(fileEnvHost); ok {
+		if ok, path, keys := loadEnvFile(fileEnvHost); ok {
 			loadedFiles = append(loadedFiles, path)
+			recordLoadedEnvKeys(keys)
 		}
 	}
 
 	// use testing envs when the environment indicates tests
 	if IsAppEnvTesting() {
-		if ok, path := loadEnvFile(envFileTesting); ok {
+		if ok, path, keys := loadEnvFile(envFileTesting); ok {
 			loadedFiles = append(loadedFiles, path)
+			recordLoadedEnvKeys(keys)
 		}
 	}
 
@@ -106,7 +143,12 @@ func Load() error {
 	return nil
 }
 
-// LoadEnvFileIfExists is kept as a compatibility alias for Load.
+// LoadEnvFileIfExists is a compatibility alias for Load.
+// @group Environment loading
+//
+// Example:
+//
+//	_ = env.LoadEnvFileIfExists()
 func LoadEnvFileIfExists() error {
 	return Load()
 }
@@ -140,7 +182,7 @@ func IsEnvLoaded() bool {
 
 // searches for .env file through directory traversal
 // loads .env file if found
-func loadEnvFile(envFile string) (bool, string) {
+func loadEnvFile(envFile string) (bool, string, []string) {
 	var path string
 	found := false
 	for i := 0; i < MaxDirectorySeekLevels; i++ {
@@ -153,12 +195,38 @@ func loadEnvFile(envFile string) (bool, string) {
 	}
 
 	if found {
+		values, err := godotenv.Read(path)
+		if err != nil {
+			panic(err)
+		}
 		if err := godotenv.Overload(path); err != nil {
 			panic(err)
 		}
+		return true, path, mapKeys(values)
 	}
 
-	return found, path
+	return found, path, nil
+}
+
+func clearLoadedEnvKeys() {
+	for key := range loadedEnvKeys {
+		_ = os.Unsetenv(key)
+	}
+	loadedEnvKeys = map[string]struct{}{}
+}
+
+func recordLoadedEnvKeys(keys []string) {
+	for _, key := range keys {
+		loadedEnvKeys[key] = struct{}{}
+	}
+}
+
+func mapKeys(values map[string]string) []string {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	return keys
 }
 
 // ANSI color codes

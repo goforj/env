@@ -352,9 +352,6 @@ func renderAPI(funcs []*FuncDoc) string {
 			anchor := strings.ToLower(fn.Name)
 
 			header := fn.Name
-			if fn.Behavior != "" && fn.Behavior != "readonly" {
-				header += " · " + fn.Behavior
-			}
 			if fn.Fluent == "true" {
 				header += " · fluent"
 			}

@@ -11,7 +11,9 @@ import (
 
 func main() {
 	// Load loads .env with optional layering for .env.local/.env.staging/.env.production,
-	// plus .env.testing/.env.host when present.
+	// plus .env.testing/.env.host when present. It only applies once per process;
+	// subsequent calls return without reloading because the result is cached. Use
+	// Reload to re-read env files after the first load.
 
 	// Example: test-specific env file
 	tmp, _ := os.MkdirTemp("", "envdoc")

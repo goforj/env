@@ -190,7 +190,7 @@ No magic. No globals. No surprises.
 | **Application environment** | [GetAppEnv](#getappenv) [IsAppEnv](#isappenv) [IsAppEnvLocal](#isappenvlocal) [IsAppEnvLocalOrStaging](#isappenvlocalorstaging) [IsAppEnvProduction](#isappenvproduction) [IsAppEnvStaging](#isappenvstaging) [IsAppEnvTesting](#isappenvtesting) [IsAppEnvTestingOrLocal](#isappenvtestingorlocal) [SetAppEnv](#setappenv) [SetAppEnvLocal](#setappenvlocal) [SetAppEnvProduction](#setappenvproduction) [SetAppEnvStaging](#setappenvstaging) [SetAppEnvTesting](#setappenvtesting) |
 | **Container detection** | [IsContainer](#iscontainer) [IsDocker](#isdocker) [IsDockerHost](#isdockerhost) [IsDockerInDocker](#isdockerindocker) [IsHostEnvironment](#ishostenvironment) [IsKubernetes](#iskubernetes) |
 | **Debugging** | [Dump](#dump) |
-| **Environment loading** | [IsEnvLoaded](#isenvloaded) [Load](#load) [LoadEnvFileIfExists](#loadenvfileifexists) |
+| **Environment loading** | [IsEnvLoaded](#isenvloaded) [Load](#load) [LoadEnvFileIfExists](#loadenvfileifexists) [Reload](#reload) |
 | **Other** | [Key](#key) |
 | **Runtime** | [Arch](#arch) [IsBSD](#isbsd) [IsContainerOS](#iscontaineros) [IsLinux](#islinux) [IsMac](#ismac) [IsUnix](#isunix) [IsWindows](#iswindows) [OS](#os) |
 | **Typed getters** | [Child](#child) [ChildNames](#childnames) [Get](#get) [GetBool](#getbool) [GetDuration](#getduration) [GetEnum](#getenum) [GetFloat](#getfloat) [GetInt](#getint) [GetInt64](#getint64) [GetMap](#getmap) [GetMapInt](#getmapint) [GetSlice](#getslice) [GetUint](#getuint) [GetUint64](#getuint64) [MustGet](#mustget) [MustGetBool](#mustgetbool) [MustGetInt](#mustgetint) [WithPrefix](#withprefix) |
@@ -300,7 +300,7 @@ env.Dump(env.IsAppEnvTestingOrLocal())
 // #bool true
 ```
 
-### <a id="setappenv"></a>SetAppEnv · mutates-process-env
+### <a id="setappenv"></a>SetAppEnv
 
 SetAppEnv sets APP_ENV to a supported value.
 
@@ -312,7 +312,7 @@ env.Dump(env.GetAppEnv())
 // #string "staging"
 ```
 
-### <a id="setappenvlocal"></a>SetAppEnvLocal · mutates-process-env
+### <a id="setappenvlocal"></a>SetAppEnvLocal
 
 SetAppEnvLocal sets APP_ENV to "local".
 
@@ -322,7 +322,7 @@ env.Dump(env.GetAppEnv())
 // #string "local"
 ```
 
-### <a id="setappenvproduction"></a>SetAppEnvProduction · mutates-process-env
+### <a id="setappenvproduction"></a>SetAppEnvProduction
 
 SetAppEnvProduction sets APP_ENV to "production".
 
@@ -332,7 +332,7 @@ env.Dump(env.GetAppEnv())
 // #string "production"
 ```
 
-### <a id="setappenvstaging"></a>SetAppEnvStaging · mutates-process-env
+### <a id="setappenvstaging"></a>SetAppEnvStaging
 
 SetAppEnvStaging sets APP_ENV to "staging".
 
@@ -342,7 +342,7 @@ env.Dump(env.GetAppEnv())
 // #string "staging"
 ```
 
-### <a id="setappenvtesting"></a>SetAppEnvTesting · mutates-process-env
+### <a id="setappenvtesting"></a>SetAppEnvTesting
 
 SetAppEnvTesting sets APP_ENV to "testing".
 
@@ -459,10 +459,12 @@ env.Dump(env.IsEnvLoaded())
 // #bool false (otherwise)
 ```
 
-### <a id="load"></a>Load · mutates-process-env
+### <a id="load"></a>Load
 
 Load loads .env with optional layering for .env.local/.env.staging/.env.production,
-plus .env.testing/.env.host when present.
+plus .env.testing/.env.host when present. It only applies once per process;
+subsequent calls return without reloading because the result is cached. Use
+Reload to re-read env files after the first load.
 
 _Example: test-specific env file_
 
@@ -486,9 +488,29 @@ env.Dump(os.Getenv("SERVICE"))
 // #string "api"
 ```
 
-### <a id="loadenvfileifexists"></a>LoadEnvFileIfExists · mutates-process-env
+### <a id="loadenvfileifexists"></a>LoadEnvFileIfExists
 
-LoadEnvFileIfExists is a compatibility alias for [Load](#load).
+LoadEnvFileIfExists is a compatibility alias for Load.
+
+```go
+_ = env.LoadEnvFileIfExists()
+```
+
+### <a id="reload"></a>Reload
+
+Reload re-applies the same layered env loading as Load, even if Load already
+ran earlier in the same process.
+
+_Example: refresh changed env files_
+
+```go
+_ = os.WriteFile(".env", []byte("SERVICE=api"), 0o644)
+_ = env.Load()
+_ = os.WriteFile(".env", []byte("SERVICE=worker"), 0o644)
+_ = env.Reload()
+env.Dump(os.Getenv("SERVICE"))
+// #string "worker"
+```
 
 ## Other
 
@@ -910,7 +932,7 @@ env.Dump(maxItems)
 // #uint64 100
 ```
 
-### <a id="mustget"></a>MustGet · panic
+### <a id="mustget"></a>MustGet
 
 MustGet returns the value of key or panics if missing/empty.
 
@@ -930,7 +952,7 @@ os.Unsetenv("API_SECRET")
 secret = env.MustGet("API_SECRET") // panics: env variable missing: API_SECRET
 ```
 
-### <a id="mustgetbool"></a>MustGetBool · panic
+### <a id="mustgetbool"></a>MustGetBool
 
 MustGetBool panics if missing or invalid.
 
@@ -950,7 +972,7 @@ _ = os.Setenv("FEATURE_ENABLED", "maybe")
 _ = env.MustGetBool("FEATURE_ENABLED") // panics when parsing
 ```
 
-### <a id="mustgetint"></a>MustGetInt · panic
+### <a id="mustgetint"></a>MustGetInt
 
 MustGetInt panics if the value is missing or not an int.
 

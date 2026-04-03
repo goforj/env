@@ -3,28 +3,10 @@
 
 package main
 
-import (
-	"github.com/goforj/env/v2"
-	"os"
-	"path/filepath"
-)
+import "github.com/goforj/env/v2"
 
 func main() {
 	// LoadEnvFileIfExists is a compatibility alias for Load.
 
-	// Example: test-specific env file
-	tmp, _ := os.MkdirTemp("", "envdoc")
-	_ = os.WriteFile(filepath.Join(tmp, ".env.testing"), []byte("PORT=9090\nENV_DEBUG=0"), 0o644)
-	_ = os.Chdir(tmp)
-	_ = os.Setenv("APP_ENV", env.Testing)
-
 	_ = env.LoadEnvFileIfExists()
-	env.Dump(os.Getenv("PORT"))
-	// #string "9090"
-
-	// Example: default .env on a host
-	_ = os.WriteFile(".env", []byte("SERVICE=api\nENV_DEBUG=3"), 0o644)
-	_ = env.LoadEnvFileIfExists()
-	env.Dump(os.Getenv("SERVICE"))
-	// #string "api"
 }
