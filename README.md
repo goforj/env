@@ -187,13 +187,13 @@ No magic. No globals. No surprises.
 
 | Group | Functions |
 |------:|-----------|
-| **Application environment** | [GetAppEnv](#getappenv) [IsAppEnv](#isappenv) [IsAppEnvLocal](#isappenvlocal) [IsAppEnvLocalOrStaging](#isappenvlocalorstaging) [IsAppEnvProduction](#isappenvproduction) [IsAppEnvStaging](#isappenvstaging) [IsAppEnvTesting](#isappenvtesting) [IsAppEnvTestingOrLocal](#isappenvtestingorlocal) [SetAppEnv](#setappenv) [SetAppEnvLocal](#setappenvlocal) [SetAppEnvProduction](#setappenvproduction) [SetAppEnvStaging](#setappenvstaging) [SetAppEnvTesting](#setappenvtesting) |
-| **Container detection** | [IsContainer](#iscontainer) [IsDocker](#isdocker) [IsDockerHost](#isdockerhost) [IsDockerInDocker](#isdockerindocker) [IsHostEnvironment](#ishostenvironment) [IsKubernetes](#iskubernetes) |
+| **Application environment** | [GetAppEnv](#getappenv) · [IsAppEnv](#isappenv) · [IsAppEnvLocal](#isappenvlocal) · [IsAppEnvLocalOrStaging](#isappenvlocalorstaging) · [IsAppEnvProduction](#isappenvproduction) · [IsAppEnvStaging](#isappenvstaging) · [IsAppEnvTesting](#isappenvtesting) · [IsAppEnvTestingOrLocal](#isappenvtestingorlocal) · [SetAppEnv](#setappenv) · [SetAppEnvLocal](#setappenvlocal) · [SetAppEnvProduction](#setappenvproduction) · [SetAppEnvStaging](#setappenvstaging) · [SetAppEnvTesting](#setappenvtesting) |
+| **Container detection** | [IsContainer](#iscontainer) · [IsDocker](#isdocker) · [IsDockerHost](#isdockerhost) · [IsDockerInDocker](#isdockerindocker) · [IsHostEnvironment](#ishostenvironment) · [IsKubernetes](#iskubernetes) |
 | **Debugging** | [Dump](#dump) |
-| **Environment loading** | [IsEnvLoaded](#isenvloaded) [Load](#load) [LoadEnvFileIfExists](#loadenvfileifexists) [Reload](#reload) |
-| **Other** | [Key](#key) |
-| **Runtime** | [Arch](#arch) [IsBSD](#isbsd) [IsContainerOS](#iscontaineros) [IsLinux](#islinux) [IsMac](#ismac) [IsUnix](#isunix) [IsWindows](#iswindows) [OS](#os) |
-| **Typed getters** | [Child](#child) [ChildNames](#childnames) [Get](#get) [GetBool](#getbool) [GetDuration](#getduration) [GetEnum](#getenum) [GetFloat](#getfloat) [GetInt](#getint) [GetInt64](#getint64) [GetMap](#getmap) [GetMapInt](#getmapint) [GetSlice](#getslice) [GetUint](#getuint) [GetUint64](#getuint64) [MustGet](#mustget) [MustGetBool](#mustgetbool) [MustGetInt](#mustgetint) [WithPrefix](#withprefix) |
+| **Environment loading** | [IsEnvLoaded](#isenvloaded) · [Load](#load) · [LoadEnvFileIfExists](#loadenvfileifexists) · [Reload](#reload) |
+| **Other** | [Get](#get) · [GetBool](#getbool) · [GetDuration](#getduration) · [GetEnum](#getenum) · [GetFloat](#getfloat) · [GetInt](#getint) · [GetInt64](#getint64) · [GetMap](#getmap) · [GetMapInt](#getmapint) · [GetSlice](#getslice) · [GetUint](#getuint) · [GetUint64](#getuint64) · [Key](#key) |
+| **Runtime** | [Arch](#arch) · [IsBSD](#isbsd) · [IsContainerOS](#iscontaineros) · [IsLinux](#islinux) · [IsMac](#ismac) · [IsUnix](#isunix) · [IsWindows](#iswindows) · [OS](#os) |
+| **Typed getters** | [Child](#child) · [ChildNames](#childnames) · [MustGet](#mustget) · [MustGetBool](#mustgetbool) · [MustGetInt](#mustgetint) · [WithPrefix](#withprefix) |
 
 
 ## Application environment
@@ -514,6 +514,286 @@ env.Dump(os.Getenv("SERVICE"))
 
 ## Other
 
+### <a id="get"></a>Get
+
+Get returns the string value for key within the scope.
+
+_Example: fallback when unset_
+
+```go
+os.Unsetenv("DB_HOST")
+host := env.Get("DB_HOST", "localhost")
+env.Dump(host)
+// #string "localhost"
+```
+
+_Example: prefer existing value_
+
+```go
+_ = os.Setenv("DB_HOST", "db.internal")
+host = env.Get("DB_HOST", "localhost")
+env.Dump(host)
+// #string "db.internal"
+```
+
+### <a id="getbool"></a>GetBool
+
+GetBool returns the bool value for key within the scope.
+
+_Example: numeric truthy_
+
+```go
+_ = os.Setenv("DEBUG", "1")
+debug := env.GetBool("DEBUG", "false")
+env.Dump(debug)
+// #bool true
+```
+
+_Example: fallback string_
+
+```go
+os.Unsetenv("DEBUG")
+debug = env.GetBool("DEBUG", "false")
+env.Dump(debug)
+// #bool false
+```
+
+### <a id="getduration"></a>GetDuration
+
+GetDuration returns the duration value for key within the scope.
+
+_Example: override request timeout_
+
+```go
+_ = os.Setenv("HTTP_TIMEOUT", "30s")
+timeout := env.GetDuration("HTTP_TIMEOUT", "5s")
+env.Dump(timeout)
+// #time.Duration 30s
+```
+
+_Example: fallback when unset_
+
+```go
+os.Unsetenv("HTTP_TIMEOUT")
+timeout = env.GetDuration("HTTP_TIMEOUT", "5s")
+env.Dump(timeout)
+// #time.Duration 5s
+```
+
+### <a id="getenum"></a>GetEnum
+
+GetEnum returns the enum value for key within the scope.
+
+_Example: accept only staged environments_
+
+```go
+_ = os.Setenv("APP_ENV", "production")
+appEnv := env.GetEnum("APP_ENV", "local", []string{"local", "staging", "production"})
+env.Dump(appEnv)
+// #string "production"
+```
+
+_Example: fallback when unset_
+
+```go
+os.Unsetenv("APP_ENV")
+appEnv = env.GetEnum("APP_ENV", "local", []string{"local", "staging", "production"})
+env.Dump(appEnv)
+// #string "local"
+```
+
+### <a id="getfloat"></a>GetFloat
+
+GetFloat returns the float64 value for key within the scope.
+
+_Example: override threshold_
+
+```go
+_ = os.Setenv("THRESHOLD", "0.82")
+threshold := env.GetFloat("THRESHOLD", "0.75")
+env.Dump(threshold)
+// #float64 0.82
+```
+
+_Example: fallback with decimal string_
+
+```go
+os.Unsetenv("THRESHOLD")
+threshold = env.GetFloat("THRESHOLD", "0.75")
+env.Dump(threshold)
+// #float64 0.75
+```
+
+### <a id="getint"></a>GetInt
+
+GetInt returns the int value for key within the scope.
+
+_Example: fallback used_
+
+```go
+os.Unsetenv("PORT")
+port := env.GetInt("PORT", "3000")
+env.Dump(port)
+// #int 3000
+```
+
+_Example: env overrides fallback_
+
+```go
+_ = os.Setenv("PORT", "8080")
+port = env.GetInt("PORT", "3000")
+env.Dump(port)
+// #int 8080
+```
+
+### <a id="getint64"></a>GetInt64
+
+GetInt64 returns the int64 value for key within the scope.
+
+_Example: parse large numbers safely_
+
+```go
+_ = os.Setenv("MAX_SIZE", "1048576")
+size := env.GetInt64("MAX_SIZE", "512")
+env.Dump(size)
+// #int64 1048576
+```
+
+_Example: fallback when unset_
+
+```go
+os.Unsetenv("MAX_SIZE")
+size = env.GetInt64("MAX_SIZE", "512")
+env.Dump(size)
+// #int64 512
+```
+
+### <a id="getmap"></a>GetMap
+
+GetMap returns the string map value for key within the scope.
+
+_Example: parse throttling config_
+
+```go
+_ = os.Setenv("LIMITS", "read=10, write=5, burst=20")
+limits := env.GetMap("LIMITS", "")
+env.Dump(limits)
+// #map[string]string [
+//  "burst" => "20" #string
+//  "read"  => "10" #string
+//  "write" => "5" #string
+// ]
+```
+
+_Example: returns empty map when unset or blank_
+
+```go
+os.Unsetenv("LIMITS")
+limits = env.GetMap("LIMITS", "")
+env.Dump(limits)
+// #map[string]string []
+```
+
+### <a id="getmapint"></a>GetMapInt
+
+GetMapInt returns the int map value for key within the scope.
+
+_Example: parse worker queue weights_
+
+```go
+_ = os.Setenv("QUEUE_WEIGHTS", "critical=6, default=3, low=1")
+weights := env.GetMapInt("QUEUE_WEIGHTS", "", 1)
+env.Dump(weights)
+// #map[string]int [
+//  "critical" => 6 #int
+//  "default"  => 3 #int
+//  "low"      => 1 #int
+// ]
+```
+
+_Example: invalid values use defaultValue_
+
+```go
+os.Unsetenv("QUEUE_WEIGHTS")
+weights = env.GetMapInt("QUEUE_WEIGHTS", "critical=,default=0,low=nope,misc", 2)
+env.Dump(weights)
+// #map[string]int [
+//  "critical" => 2 #int
+//  "default"  => 2 #int
+//  "low"      => 2 #int
+//  "misc"     => 2 #int
+// ]
+```
+
+### <a id="getslice"></a>GetSlice
+
+GetSlice returns the string slice value for key within the scope.
+
+_Example: trimmed addresses_
+
+```go
+_ = os.Setenv("PEERS", "10.0.0.1, 10.0.0.2")
+peers := env.GetSlice("PEERS", "")
+env.Dump(peers)
+// #[]string [
+//  0 => "10.0.0.1" #string
+//  1 => "10.0.0.2" #string
+// ]
+```
+
+_Example: empty becomes empty slice_
+
+```go
+os.Unsetenv("PEERS")
+peers = env.GetSlice("PEERS", "")
+env.Dump(peers)
+// #[]string []
+```
+
+### <a id="getuint"></a>GetUint
+
+GetUint returns the uint value for key within the scope.
+
+_Example: defaults to fallback when missing_
+
+```go
+os.Unsetenv("WORKERS")
+workers := env.GetUint("WORKERS", "4")
+env.Dump(workers)
+// #uint 4
+```
+
+_Example: uses provided unsigned value_
+
+```go
+_ = os.Setenv("WORKERS", "16")
+workers = env.GetUint("WORKERS", "4")
+env.Dump(workers)
+// #uint 16
+```
+
+### <a id="getuint64"></a>GetUint64
+
+GetUint64 returns the uint64 value for key within the scope.
+
+_Example: high range values_
+
+```go
+_ = os.Setenv("MAX_ITEMS", "5000")
+maxItems := env.GetUint64("MAX_ITEMS", "100")
+env.Dump(maxItems)
+// #uint64 5000
+```
+
+_Example: fallback when unset_
+
+```go
+os.Unsetenv("MAX_ITEMS")
+maxItems = env.GetUint64("MAX_ITEMS", "100")
+env.Dump(maxItems)
+// #uint64 100
+```
+
 ### <a id="key"></a>Key
 
 Key builds the fully qualified environment key for key within the scope.
@@ -649,287 +929,6 @@ env.Dump(names)
 //  0 => "AVATARS" #string
 //  1 => "PUBLIC" #string
 // ]
-```
-
-### <a id="get"></a>Get
-
-Get returns the environment variable for key or fallback when empty.
-
-_Example: fallback when unset_
-
-```go
-os.Unsetenv("DB_HOST")
-host := env.Get("DB_HOST", "localhost")
-env.Dump(host)
-// #string "localhost"
-```
-
-_Example: prefer existing value_
-
-```go
-_ = os.Setenv("DB_HOST", "db.internal")
-host = env.Get("DB_HOST", "localhost")
-env.Dump(host)
-// #string "db.internal"
-```
-
-### <a id="getbool"></a>GetBool
-
-GetBool parses a boolean from an environment variable or fallback string.
-
-_Example: numeric truthy_
-
-```go
-_ = os.Setenv("DEBUG", "1")
-debug := env.GetBool("DEBUG", "false")
-env.Dump(debug)
-// #bool true
-```
-
-_Example: fallback string_
-
-```go
-os.Unsetenv("DEBUG")
-debug = env.GetBool("DEBUG", "false")
-env.Dump(debug)
-// #bool false
-```
-
-### <a id="getduration"></a>GetDuration
-
-GetDuration parses a Go duration string (e.g. "5s", "10m", "1h").
-
-_Example: override request timeout_
-
-```go
-_ = os.Setenv("HTTP_TIMEOUT", "30s")
-timeout := env.GetDuration("HTTP_TIMEOUT", "5s")
-env.Dump(timeout)
-// #time.Duration 30s
-```
-
-_Example: fallback when unset_
-
-```go
-os.Unsetenv("HTTP_TIMEOUT")
-timeout = env.GetDuration("HTTP_TIMEOUT", "5s")
-env.Dump(timeout)
-// #time.Duration 5s
-```
-
-### <a id="getenum"></a>GetEnum
-
-GetEnum ensures the environment variable's value is in the allowed list.
-
-_Example: accept only staged environments_
-
-```go
-_ = os.Setenv("APP_ENV", "production")
-appEnv := env.GetEnum("APP_ENV", "local", []string{"local", "staging", "production"})
-env.Dump(appEnv)
-// #string "production"
-```
-
-_Example: fallback when unset_
-
-```go
-os.Unsetenv("APP_ENV")
-appEnv = env.GetEnum("APP_ENV", "local", []string{"local", "staging", "production"})
-env.Dump(appEnv)
-// #string "local"
-```
-
-### <a id="getfloat"></a>GetFloat
-
-GetFloat parses a float64 from an environment variable or fallback string.
-
-_Example: override threshold_
-
-```go
-_ = os.Setenv("THRESHOLD", "0.82")
-threshold := env.GetFloat("THRESHOLD", "0.75")
-env.Dump(threshold)
-// #float64 0.82
-```
-
-_Example: fallback with decimal string_
-
-```go
-os.Unsetenv("THRESHOLD")
-threshold = env.GetFloat("THRESHOLD", "0.75")
-env.Dump(threshold)
-// #float64 0.75
-```
-
-### <a id="getint"></a>GetInt
-
-GetInt parses an int from an environment variable or fallback string.
-
-_Example: fallback used_
-
-```go
-os.Unsetenv("PORT")
-port := env.GetInt("PORT", "3000")
-env.Dump(port)
-// #int 3000
-```
-
-_Example: env overrides fallback_
-
-```go
-_ = os.Setenv("PORT", "8080")
-port = env.GetInt("PORT", "3000")
-env.Dump(port)
-// #int 8080
-```
-
-### <a id="getint64"></a>GetInt64
-
-GetInt64 parses an int64 from an environment variable or fallback string.
-
-_Example: parse large numbers safely_
-
-```go
-_ = os.Setenv("MAX_SIZE", "1048576")
-size := env.GetInt64("MAX_SIZE", "512")
-env.Dump(size)
-// #int64 1048576
-```
-
-_Example: fallback when unset_
-
-```go
-os.Unsetenv("MAX_SIZE")
-size = env.GetInt64("MAX_SIZE", "512")
-env.Dump(size)
-// #int64 512
-```
-
-### <a id="getmap"></a>GetMap
-
-GetMap parses key=value pairs separated by commas into a map.
-
-_Example: parse throttling config_
-
-```go
-_ = os.Setenv("LIMITS", "read=10, write=5, burst=20")
-limits := env.GetMap("LIMITS", "")
-env.Dump(limits)
-// #map[string]string [
-//  "burst" => "20" #string
-//  "read"  => "10" #string
-//  "write" => "5" #string
-// ]
-```
-
-_Example: returns empty map when unset or blank_
-
-```go
-os.Unsetenv("LIMITS")
-limits = env.GetMap("LIMITS", "")
-env.Dump(limits)
-// #map[string]string []
-```
-
-### <a id="getmapint"></a>GetMapInt
-
-GetMapInt parses key=int pairs separated by commas into a map.
-Invalid, missing, or non-positive values fall back to defaultValue.
-
-_Example: parse worker queue weights_
-
-```go
-_ = os.Setenv("QUEUE_WEIGHTS", "critical=6, default=3, low=1")
-weights := env.GetMapInt("QUEUE_WEIGHTS", "", 1)
-env.Dump(weights)
-// #map[string]int [
-//  "critical" => 6 #int
-//  "default"  => 3 #int
-//  "low"      => 1 #int
-// ]
-```
-
-_Example: invalid values use defaultValue_
-
-```go
-os.Unsetenv("QUEUE_WEIGHTS")
-weights = env.GetMapInt("QUEUE_WEIGHTS", "critical=,default=0,low=nope,misc", 2)
-env.Dump(weights)
-// #map[string]int [
-//  "critical" => 2 #int
-//  "default"  => 2 #int
-//  "low"      => 2 #int
-//  "misc"     => 2 #int
-// ]
-```
-
-### <a id="getslice"></a>GetSlice
-
-GetSlice splits a comma-separated string into a []string with trimming.
-
-_Example: trimmed addresses_
-
-```go
-_ = os.Setenv("PEERS", "10.0.0.1, 10.0.0.2")
-peers := env.GetSlice("PEERS", "")
-env.Dump(peers)
-// #[]string [
-//  0 => "10.0.0.1" #string
-//  1 => "10.0.0.2" #string
-// ]
-```
-
-_Example: empty becomes empty slice_
-
-```go
-os.Unsetenv("PEERS")
-peers = env.GetSlice("PEERS", "")
-env.Dump(peers)
-// #[]string []
-```
-
-### <a id="getuint"></a>GetUint
-
-GetUint parses a uint from an environment variable or fallback string.
-
-_Example: defaults to fallback when missing_
-
-```go
-os.Unsetenv("WORKERS")
-workers := env.GetUint("WORKERS", "4")
-env.Dump(workers)
-// #uint 4
-```
-
-_Example: uses provided unsigned value_
-
-```go
-_ = os.Setenv("WORKERS", "16")
-workers = env.GetUint("WORKERS", "4")
-env.Dump(workers)
-// #uint 16
-```
-
-### <a id="getuint64"></a>GetUint64
-
-GetUint64 parses a uint64 from an environment variable or fallback string.
-
-_Example: high range values_
-
-```go
-_ = os.Setenv("MAX_ITEMS", "5000")
-maxItems := env.GetUint64("MAX_ITEMS", "100")
-env.Dump(maxItems)
-// #uint64 5000
-```
-
-_Example: fallback when unset_
-
-```go
-os.Unsetenv("MAX_ITEMS")
-maxItems = env.GetUint64("MAX_ITEMS", "100")
-env.Dump(maxItems)
-// #uint64 100
 ```
 
 ### <a id="mustget"></a>MustGet
