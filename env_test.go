@@ -77,7 +77,7 @@ func TestGetUintUsesNativeWidth(t *testing.T) {
 	}
 	value := strconv.FormatUint(uint64(1)<<40, 10)
 	withEnv("ENV_QPASS_NATIVE_UINT", value, func() {
-		if got := GetUint("ENV_QPASS_NATIVE_UINT", "0"); got != uint(1)<<40 {
+		if got := GetUint("ENV_QPASS_NATIVE_UINT", "0"); uint64(got) != uint64(1)<<40 {
 			t.Fatalf("expected native-width uint, got %d", got)
 		}
 	})

@@ -58,6 +58,10 @@ jobs:
         working-directory: examples
         run: go test ./...
 
+      - name: Compile 32-bit tests
+        if: matrix.go-version == 'stable'
+        run: GOOS=linux GOARCH=386 CGO_ENABLED=0 go test -c -o /tmp/env-linux-386.test .
+
       - name: Upload coverage
         if: matrix.go-version == 'stable'
         uses: codecov/codecov-action@v5
