@@ -1,22 +1,30 @@
 package env
 
 import (
-	"github.com/goforj/godump"
 	"io"
 	"os"
+	"sync"
+
+	"github.com/goforj/godump"
 )
 
-var dumpWriter io.Writer = os.Stdout
+var dumpState = struct {
+	mu     sync.Mutex
+	writer io.Writer
+}{writer: os.Stdout}
 
-// setDumpWriter allows tests to redirect dump output.
-// Not exported — production code never needs this.
+// setDumpWriter redirects complete dumps so tests can inspect output without partial writes.
 func setDumpWriter(w io.Writer) {
-	dumpWriter = w
+	dumpState.mu.Lock()
+	defer dumpState.mu.Unlock()
+	dumpState.writer = w
 }
 
-// Dump is a convenience function that calls godump.Dump.
+// Dump writes complete representations of its arguments to standard output.
 // @group Debugging
 // @behavior readonly
+//
+// Dump does not redact values. Never pass credentials, tokens, private keys, or other secrets.
 //
 // Example: integers
 //
@@ -37,6 +45,8 @@ func setDumpWriter(w io.Writer) {
 //	//   "ok"   => 1 #int
 //	// ]
 func Dump(vs ...any) {
-	d := godump.NewDumper(godump.WithWriter(dumpWriter))
+	dumpState.mu.Lock()
+	defer dumpState.mu.Unlock()
+	d := godump.NewDumper(godump.WithWriter(dumpState.writer))
 	d.Dump(vs...)
 }

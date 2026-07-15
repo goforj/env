@@ -2,51 +2,54 @@ package examples
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
+// TestExamplesBuild ensures every generated standalone program remains valid outside the workspace.
 func TestExamplesBuild(t *testing.T) {
 	entries, err := os.ReadDir(".")
 	if err != nil {
 		t.Fatalf("cannot read examples directory: %v", err)
 	}
 
-	for _, e := range entries {
-		if !e.IsDir() {
+	buildSlots := make(chan struct{}, 4)
+	for _, entry := range entries {
+		if !entry.IsDir() {
 			continue
 		}
 
-		// Capture loop variable for parallel subtests.
-		name := e.Name()
+		name := entry.Name()
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
+			buildSlots <- struct{}{}
+			defer func() { <-buildSlots }()
 
-			if err := buildExampleWithoutTags(name); err != nil {
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			if err := buildExampleWithoutTags(ctx, name); err != nil {
 				t.Fatalf("example %q failed to build:\n%s", name, err)
 			}
 		})
 	}
 }
 
-func abs(p string) string {
-	a, err := filepath.Abs(p)
-	if err != nil {
-		panic(err)
-	}
-	return a
-}
-
-func buildExampleWithoutTags(exampleName string) error {
+// buildExampleWithoutTags overlays generated source so ignored examples are still compiled in CI.
+func buildExampleWithoutTags(ctx context.Context, exampleName string) error {
 	orig := filepath.Join(exampleName, "main.go")
+	originalPath, err := filepath.Abs(orig)
+	if err != nil {
+		return fmt.Errorf("resolve example path: %w", err)
+	}
 
-	src, err := os.ReadFile(orig)
+	src, err := os.ReadFile(originalPath)
 	if err != nil {
 		return fmt.Errorf("read main.go: %w", err)
 	}
@@ -64,9 +67,13 @@ func buildExampleWithoutTags(exampleName string) error {
 		return err
 	}
 
+	temporaryPath, err := filepath.Abs(tmpFile)
+	if err != nil {
+		return fmt.Errorf("resolve overlay path: %w", err)
+	}
 	overlay := map[string]any{
 		"Replace": map[string]string{
-			abs(orig): abs(tmpFile),
+			originalPath: temporaryPath,
 		},
 	}
 
@@ -80,7 +87,8 @@ func buildExampleWithoutTags(exampleName string) error {
 		return err
 	}
 
-	cmd := exec.Command(
+	cmd := exec.CommandContext(
+		ctx,
 		"go", "build",
 		"-overlay", overlayPath,
 		"-o", os.DevNull,
@@ -91,12 +99,16 @@ func buildExampleWithoutTags(exampleName string) error {
 	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
-		return errors.New(stderr.String())
+		if ctx.Err() != nil {
+			return fmt.Errorf("go build exceeded deadline: %w", ctx.Err())
+		}
+		return fmt.Errorf("go build: %w\n%s", err, stderr.String())
 	}
 
 	return nil
 }
 
+// stripBuildTags removes only the leading constraints that intentionally hide generated programs.
 func stripBuildTags(src []byte) []byte {
 	lines := strings.Split(string(src), "\n")
 

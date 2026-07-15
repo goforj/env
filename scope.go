@@ -16,6 +16,9 @@ type Scope struct {
 // @group Typed getters
 // @behavior readonly
 //
+// Normalization trims surrounding whitespace and boundary underscores while preserving case and
+// internal separators.
+//
 // Example: root scope access
 //
 //	_ = os.Setenv("STORAGE_DRIVER", "local")
@@ -62,6 +65,8 @@ func (s Scope) Child(name string) Scope {
 }
 
 // Key builds the fully qualified environment key for key within the scope.
+// @group Typed getters
+// @behavior readonly
 func (s Scope) Key(key string) string {
 	segment := normalizeScopeSegment(key)
 	switch {
@@ -77,6 +82,10 @@ func (s Scope) Key(key string) string {
 // ChildNames discovers named child scopes under the current prefix.
 // @group Typed getters
 // @behavior readonly
+//
+// Discovery preserves case, matches the longest normalized root-key suffix first, removes
+// duplicates, and returns child names in lexical order. Process environment entries outside the
+// scope prefix are ignored.
 //
 // Example: discover child names
 //
@@ -107,6 +116,9 @@ func (s Scope) ChildNames(rootKeys []string) []string {
 	for _, key := range rootKeys {
 		normalized := normalizeScopeSegment(key)
 		if normalized == "" {
+			continue
+		}
+		if _, exists := rootKeySet[normalized]; exists {
 			continue
 		}
 		rootKeySet[normalized] = struct{}{}
@@ -160,65 +172,90 @@ func (s Scope) ChildNames(rootKeys []string) []string {
 }
 
 // Get returns the string value for key within the scope.
+// @group Typed getters
+// @behavior readonly
 func (s Scope) Get(key, fallback string) string {
 	return Get(s.Key(key), fallback)
 }
 
 // GetInt returns the int value for key within the scope.
+// @group Typed getters
+// @behavior readonly
 func (s Scope) GetInt(key, fallback string) int {
 	return GetInt(s.Key(key), fallback)
 }
 
 // GetInt64 returns the int64 value for key within the scope.
+// @group Typed getters
+// @behavior readonly
 func (s Scope) GetInt64(key, fallback string) int64 {
 	return GetInt64(s.Key(key), fallback)
 }
 
 // GetUint returns the uint value for key within the scope.
+// @group Typed getters
+// @behavior readonly
 func (s Scope) GetUint(key, fallback string) uint {
 	return GetUint(s.Key(key), fallback)
 }
 
 // GetUint64 returns the uint64 value for key within the scope.
+// @group Typed getters
+// @behavior readonly
 func (s Scope) GetUint64(key, fallback string) uint64 {
 	return GetUint64(s.Key(key), fallback)
 }
 
 // GetFloat returns the float64 value for key within the scope.
+// @group Typed getters
+// @behavior readonly
 func (s Scope) GetFloat(key, fallback string) float64 {
 	return GetFloat(s.Key(key), fallback)
 }
 
 // GetBool returns the bool value for key within the scope.
+// @group Typed getters
+// @behavior readonly
 func (s Scope) GetBool(key, fallback string) bool {
 	return GetBool(s.Key(key), fallback)
 }
 
 // GetDuration returns the duration value for key within the scope.
+// @group Typed getters
+// @behavior readonly
 func (s Scope) GetDuration(key, fallback string) time.Duration {
 	return GetDuration(s.Key(key), fallback)
 }
 
 // GetEnum returns the enum value for key within the scope.
+// @group Typed getters
+// @behavior readonly
 func (s Scope) GetEnum(key, fallback string, allowed []string) string {
 	return GetEnum(s.Key(key), fallback, allowed)
 }
 
 // GetSlice returns the string slice value for key within the scope.
+// @group Typed getters
+// @behavior readonly
 func (s Scope) GetSlice(key, fallback string) []string {
 	return GetSlice(s.Key(key), fallback)
 }
 
 // GetMap returns the string map value for key within the scope.
+// @group Typed getters
+// @behavior readonly
 func (s Scope) GetMap(key, fallback string) map[string]string {
 	return GetMap(s.Key(key), fallback)
 }
 
 // GetMapInt returns the int map value for key within the scope.
+// @group Typed getters
+// @behavior readonly
 func (s Scope) GetMapInt(key, fallback string, defaultValue int) map[string]int {
 	return GetMapInt(s.Key(key), fallback, defaultValue)
 }
 
+// normalizeScopeSegment preserves caller-selected case while removing accidental boundary separators.
 func normalizeScopeSegment(segment string) string {
 	return strings.Trim(strings.TrimSpace(segment), "_")
 }

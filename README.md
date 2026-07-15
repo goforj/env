@@ -10,7 +10,7 @@
     <a href="https://pkg.go.dev/github.com/goforj/env/v2"><img src="https://pkg.go.dev/badge/github.com/goforj/env/v2.svg" alt="Go Reference"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
     <a href="https://github.com/goforj/env/actions"><img src="https://github.com/goforj/env/actions/workflows/test.yml/badge.svg" alt="Go Test"></a>
-    <a href="https://golang.org"><img src="https://img.shields.io/badge/go-1.18+-blue?logo=go" alt="Go version"></a>
+    <a href="https://go.dev"><img src="https://img.shields.io/badge/go-1.24.4+-blue?logo=go" alt="Go version"></a>
     <img src="https://img.shields.io/github/v/tag/goforj/env?label=version&sort=semver" alt="Latest tag">
     <a href="https://codecov.io/gh/goforj/env" ><img src="https://codecov.io/github/goforj/env/graph/badge.svg?token=M7EFUVV1XW"/></a>
     <a href="https://goreportcard.com/report/github.com/goforj/env/v2"><img src="https://goreportcard.com/badge/github.com/goforj/env/v2" alt="Go Report Card"></a>
@@ -21,12 +21,12 @@
 **env** provides strongly-typed access to environment variables with predictable fallbacks. Eliminate string parsing, centralize app environment checks, and keep configuration boring. Designed to feel native to Go - and invisible when things are working.
 
 - **Strongly typed getters** - `int`, `bool`, `float`, `duration`, slices, maps
-- **Safe fallbacks** - never panic, never accidentally empty
+- **Explicit fallback and required-value APIs** - fallback getters stay permissive; `MustGet*` panics on missing or invalid required values
 - **Application environment helpers** - `local`, `staging`, `production`
 - **Minimal dependencies** - Pure Go, lightweight, minimal surface area
 - **Framework-agnostic** - works with any Go app
 - **Enum validation** - constrain values with allowed sets
-- **Predictable behavior** - no magic, no global state surprises
+- **Transactional env loading** - discovery, parsing, and process updates succeed together or leave the prior environment intact
 - **Composable building block** - ideal for config structs and startup wiring
 
 ## Why env?
@@ -44,7 +44,7 @@ env solves this by providing typed accessors with fallbacks, so configuration st
 
 ```bash
 go get github.com/goforj/env/v2
-````
+```
 
 ## Quickstart
 
@@ -65,18 +65,18 @@ func init() {
 }
 
 func main() {
-    addr := env.Get("ADDR", "127.0.0.1:8080")
-    debug := env.GetBool("DEBUG", "false")
-    timeout := env.GetDuration("HTTP_TIMEOUT", "5s")
-    
-    env.Dump(addr, debug, timeout)
-    // #string "127.0.0.1:8080"
-    // #bool false
-    // #time.Duration 5s
-    
-    env.Dump("container?", env.IsContainer())
-    // #string "container?"
-    // #bool false
+	addr := env.Get("ADDR", "127.0.0.1:8080")
+	debug := env.GetBool("DEBUG", "false")
+	timeout := env.GetDuration("HTTP_TIMEOUT", "5s")
+
+	env.Dump(addr, debug, timeout)
+	// #string "127.0.0.1:8080"
+	// #bool false
+	// #time.Duration 5s
+
+	env.Dump("container?", env.IsContainer())
+	// #string "container?"
+	// #bool false
 }
 ```
 
@@ -140,14 +140,36 @@ See [examples/kitchensink/main.go](examples/kitchensink/main.go) for a runnable 
 
 ## Environment loading
 
-Load loads env files in this order:
+`Load` searches for and applies env files in this order:
 
 - `.env`
 - `.env.local`, `.env.staging`, or `.env.production`, based on `APP_ENV` (`local` by default)
-- `.env.testing` when running under tests
 - `.env.host` when running on the host or DinD
+- `.env.testing` when `APP_ENV=testing` or the process has Go test markers
 
-Later files override earlier ones. Repeated calls are no-ops.
+Each filename is discovered independently, starting in the working directory and checking at most nine ancestors. The nearest regular file wins; regular-file symlinks are followed. Later layers override earlier ones, and files override ambient process values.
+
+Discovery and parsing finish before any process mutation. `Load` returns filesystem and parse errors instead of panicking, rolls back a failed environment update, and becomes a no-op after its first success. A failed call leaves `IsEnvLoaded` false and preserves the prior process environment.
+
+`Load`, `Reload`, and `IsEnvLoaded` synchronize with one another. Direct `os.Setenv` or `os.Unsetenv` calls are outside that lock, so applications that mutate the same keys concurrently must coordinate those writes themselves.
+
+`Reload` always rediscovers the selected files. Keys previously loaded from files remain file-owned, so runtime edits to those keys are replaced. If a key disappears from every file, its exact pre-load ambient state is restored, including the difference between unset and explicitly empty. Unrelated variables are untouched. A failed reload preserves the last successful configuration.
+
+When no file owns `APP_ENV`, a caller-provided value selects the application layer; otherwise `APP_ENV` defaults to `local`. A file-owned `APP_ENV` is refreshed before layer selection on reload.
+
+### v2.4 behavior notes
+
+The public v2 call shapes are unchanged. The quality pass makes previously implicit failure and reload behavior explicit:
+
+- `Load` and `Reload` return dotenv, filesystem, and environment-application errors rather than panicking.
+- `Reload` restores removed file keys to their pre-first-load ambient values instead of blindly unsetting them.
+- `MustGetInt` and `MustGetBool` now honor their documented contract and panic for missing or invalid values.
+- `GetUint` parses at the platform's native `uint` width, and `GetMap` trims keys and values around `=`.
+- `LoadEnvFileIfExists` remains a compatibility alias for `Load`.
+
+## Debug output and secrets
+
+`Dump` intentionally prints the raw values passed to it and performs no redaction. Never pass credentials, tokens, private keys, or other secrets. Loader diagnostics (`ENV_DEBUG=3`) print only selected file paths and `APP_ENV`, never dotenv keys or values.
 
 ## Container detection
 
@@ -156,18 +178,12 @@ Later files override earlier ones. Repeated calls are no-ops.
 | IsDocker | /.dockerenv or Docker cgroup markers | Generic Docker container |
 | IsDockerInDocker | /.dockerenv and docker.sock | Inner DinD container |
 | IsDockerHost | docker.sock present, no container cgroups | Host or DinD outer acting as host |
-| IsContainer | Any common container signals (Docker, containerd, kube env/cgroup) | General container detection |
+| IsContainer | Any common container signals (Docker, containerd, Podman marker/cgroup, kube env/cgroup) | General container detection |
 | IsKubernetes | KUBERNETES_SERVICE_HOST or kubepods cgroup | Inside a Kubernetes pod |
 
 ## Runnable examples
 
-Every function has a corresponding runnable example under [`./examples`](./examples).
-
-These examples are **generated directly from the documentation blocks** of each function, ensuring the docs and code never drift. These are the same examples you see here in the README and GoDoc.
-
-An automated test executes **every example** to verify it builds and runs successfully.
-
-This guarantees all examples are valid, up-to-date, and remain functional as the API evolves.
+Documented examples are generated directly from function documentation into [`./examples`](./examples), so the README, GoDoc, and example programs share one source. CI regenerates them to detect drift and builds every generated program without build tags. Examples that intentionally demonstrate panic behavior are compiled rather than executed.
 
 ## Environment file loading
 
@@ -179,7 +195,7 @@ It is intentionally composed into the runtime detection and APP_ENV model rather
 
 **env** is part of the **GoForj toolchain** - a collection of focused, composable packages designed to make building Go applications *satisfying*.
 
-No magic. No globals. No surprises.
+Small APIs. Explicit process mutation. Predictable failure modes.
 
 <!-- api:embed:start -->
 
@@ -191,9 +207,8 @@ No magic. No globals. No surprises.
 | **Container detection** | [IsContainer](#iscontainer) · [IsDocker](#isdocker) · [IsDockerHost](#isdockerhost) · [IsDockerInDocker](#isdockerindocker) · [IsHostEnvironment](#ishostenvironment) · [IsKubernetes](#iskubernetes) |
 | **Debugging** | [Dump](#dump) |
 | **Environment loading** | [IsEnvLoaded](#isenvloaded) · [Load](#load) · [LoadEnvFileIfExists](#loadenvfileifexists) · [Reload](#reload) |
-| **Other** | [Get](#get) · [GetBool](#getbool) · [GetDuration](#getduration) · [GetEnum](#getenum) · [GetFloat](#getfloat) · [GetInt](#getint) · [GetInt64](#getint64) · [GetMap](#getmap) · [GetMapInt](#getmapint) · [GetSlice](#getslice) · [GetUint](#getuint) · [GetUint64](#getuint64) · [Key](#key) |
 | **Runtime** | [Arch](#arch) · [IsBSD](#isbsd) · [IsContainerOS](#iscontaineros) · [IsLinux](#islinux) · [IsMac](#ismac) · [IsUnix](#isunix) · [IsWindows](#iswindows) · [OS](#os) |
-| **Typed getters** | [Child](#child) · [ChildNames](#childnames) · [MustGet](#mustget) · [MustGetBool](#mustgetbool) · [MustGetInt](#mustgetint) · [WithPrefix](#withprefix) |
+| **Typed getters** | [Get](#get) · [GetBool](#getbool) · [GetDuration](#getduration) · [GetEnum](#getenum) · [GetFloat](#getfloat) · [GetInt](#getint) · [GetInt64](#getint64) · [GetMap](#getmap) · [GetMapInt](#getmapint) · [GetSlice](#getslice) · [GetUint](#getuint) · [GetUint64](#getuint64) · [MustGet](#mustget) · [MustGetBool](#mustgetbool) · [MustGetInt](#mustgetint) · [Scope.Child](#scope-child) · [Scope.ChildNames](#scope-childnames) · [Scope.Get](#scope-get) · [Scope.GetBool](#scope-getbool) · [Scope.GetDuration](#scope-getduration) · [Scope.GetEnum](#scope-getenum) · [Scope.GetFloat](#scope-getfloat) · [Scope.GetInt](#scope-getint) · [Scope.GetInt64](#scope-getint64) · [Scope.GetMap](#scope-getmap) · [Scope.GetMapInt](#scope-getmapint) · [Scope.GetSlice](#scope-getslice) · [Scope.GetUint](#scope-getuint) · [Scope.GetUint64](#scope-getuint64) · [Scope.Key](#scope-key) · [WithPrefix](#withprefix) |
 
 
 ## Application environment
@@ -422,7 +437,7 @@ env.Dump(env.IsKubernetes())
 
 ### <a id="dump"></a>Dump
 
-Dump is a convenience function that calls godump.Dump.
+Dump writes complete representations of its arguments to standard output.
 
 _Example: integers_
 
@@ -451,7 +466,7 @@ env.Dump("status", map[string]int{"ok": 1, "fail": 0})
 
 ### <a id="isenvloaded"></a>IsEnvLoaded
 
-IsEnvLoaded reports whether Load or LoadEnvFileIfExists was executed in this process.
+IsEnvLoaded reports whether a Load or Reload completed successfully in this process.
 
 ```go
 env.Dump(env.IsEnvLoaded())
@@ -461,15 +476,19 @@ env.Dump(env.IsEnvLoaded())
 
 ### <a id="load"></a>Load
 
-Load loads .env with optional layering for .env.local/.env.staging/.env.production,
-plus .env.testing/.env.host when present. It only applies once per process;
-subsequent calls return without reloading because the result is cached. Use
-Reload to re-read env files after the first load.
+Load loads the nearest env files with deterministic layering.
+
+Load applies once per process. Files override ambient values, and later files override earlier
+files. Discovery and parsing complete before the process environment changes; errors leave both
+the environment and loader state unchanged. Use Reload to re-read files.
 
 _Example: test-specific env file_
 
 ```go
 tmp, _ := os.MkdirTemp("", "envdoc")
+defer os.RemoveAll(tmp)
+originalDirectory, _ := os.Getwd()
+defer os.Chdir(originalDirectory)
 _ = os.WriteFile(filepath.Join(tmp, ".env.testing"), []byte("PORT=9090\nENV_DEBUG=0"), 0o644)
 _ = os.Chdir(tmp)
 _ = os.Setenv("APP_ENV", env.Testing)
@@ -477,15 +496,6 @@ _ = os.Setenv("APP_ENV", env.Testing)
 _ = env.Load()
 env.Dump(os.Getenv("PORT"))
 // #string "9090"
-```
-
-_Example: default .env on a host_
-
-```go
-_ = os.WriteFile(".env", []byte("SERVICE=api\nENV_DEBUG=3"), 0o644)
-_ = env.Load()
-env.Dump(os.Getenv("SERVICE"))
-// #string "api"
 ```
 
 ### <a id="loadenvfileifexists"></a>LoadEnvFileIfExists
@@ -498,305 +508,27 @@ _ = env.LoadEnvFileIfExists()
 
 ### <a id="reload"></a>Reload
 
-Reload re-applies the same layered env loading as Load, even if Load already
-ran earlier in the same process.
+Reload re-discovers and transactionally reapplies env files even after Load has run.
+
+Keys loaded from files remain file-owned: Reload replaces runtime edits to those keys. When a
+key disappears from all files, Reload restores the ambient value (including unset versus empty)
+that existed before the first successful Load. Unrelated process variables are never changed.
 
 _Example: refresh changed env files_
 
 ```go
-_ = os.WriteFile(".env", []byte("SERVICE=api"), 0o644)
+tmp, _ := os.MkdirTemp("", "envdoc")
+defer os.RemoveAll(tmp)
+originalDirectory, _ := os.Getwd()
+defer os.Chdir(originalDirectory)
+_ = os.Chdir(tmp)
+_ = os.WriteFile(filepath.Join(tmp, ".env"), []byte("SERVICE=api"), 0o644)
 _ = env.Load()
-_ = os.WriteFile(".env", []byte("SERVICE=worker"), 0o644)
+_ = os.WriteFile(filepath.Join(tmp, ".env"), []byte("SERVICE=worker"), 0o644)
 _ = env.Reload()
 env.Dump(os.Getenv("SERVICE"))
 // #string "worker"
 ```
-
-## Other
-
-### <a id="get"></a>Get
-
-Get returns the string value for key within the scope.
-
-_Example: fallback when unset_
-
-```go
-os.Unsetenv("DB_HOST")
-host := env.Get("DB_HOST", "localhost")
-env.Dump(host)
-// #string "localhost"
-```
-
-_Example: prefer existing value_
-
-```go
-_ = os.Setenv("DB_HOST", "db.internal")
-host = env.Get("DB_HOST", "localhost")
-env.Dump(host)
-// #string "db.internal"
-```
-
-### <a id="getbool"></a>GetBool
-
-GetBool returns the bool value for key within the scope.
-
-_Example: numeric truthy_
-
-```go
-_ = os.Setenv("DEBUG", "1")
-debug := env.GetBool("DEBUG", "false")
-env.Dump(debug)
-// #bool true
-```
-
-_Example: fallback string_
-
-```go
-os.Unsetenv("DEBUG")
-debug = env.GetBool("DEBUG", "false")
-env.Dump(debug)
-// #bool false
-```
-
-### <a id="getduration"></a>GetDuration
-
-GetDuration returns the duration value for key within the scope.
-
-_Example: override request timeout_
-
-```go
-_ = os.Setenv("HTTP_TIMEOUT", "30s")
-timeout := env.GetDuration("HTTP_TIMEOUT", "5s")
-env.Dump(timeout)
-// #time.Duration 30s
-```
-
-_Example: fallback when unset_
-
-```go
-os.Unsetenv("HTTP_TIMEOUT")
-timeout = env.GetDuration("HTTP_TIMEOUT", "5s")
-env.Dump(timeout)
-// #time.Duration 5s
-```
-
-### <a id="getenum"></a>GetEnum
-
-GetEnum returns the enum value for key within the scope.
-
-_Example: accept only staged environments_
-
-```go
-_ = os.Setenv("APP_ENV", "production")
-appEnv := env.GetEnum("APP_ENV", "local", []string{"local", "staging", "production"})
-env.Dump(appEnv)
-// #string "production"
-```
-
-_Example: fallback when unset_
-
-```go
-os.Unsetenv("APP_ENV")
-appEnv = env.GetEnum("APP_ENV", "local", []string{"local", "staging", "production"})
-env.Dump(appEnv)
-// #string "local"
-```
-
-### <a id="getfloat"></a>GetFloat
-
-GetFloat returns the float64 value for key within the scope.
-
-_Example: override threshold_
-
-```go
-_ = os.Setenv("THRESHOLD", "0.82")
-threshold := env.GetFloat("THRESHOLD", "0.75")
-env.Dump(threshold)
-// #float64 0.82
-```
-
-_Example: fallback with decimal string_
-
-```go
-os.Unsetenv("THRESHOLD")
-threshold = env.GetFloat("THRESHOLD", "0.75")
-env.Dump(threshold)
-// #float64 0.75
-```
-
-### <a id="getint"></a>GetInt
-
-GetInt returns the int value for key within the scope.
-
-_Example: fallback used_
-
-```go
-os.Unsetenv("PORT")
-port := env.GetInt("PORT", "3000")
-env.Dump(port)
-// #int 3000
-```
-
-_Example: env overrides fallback_
-
-```go
-_ = os.Setenv("PORT", "8080")
-port = env.GetInt("PORT", "3000")
-env.Dump(port)
-// #int 8080
-```
-
-### <a id="getint64"></a>GetInt64
-
-GetInt64 returns the int64 value for key within the scope.
-
-_Example: parse large numbers safely_
-
-```go
-_ = os.Setenv("MAX_SIZE", "1048576")
-size := env.GetInt64("MAX_SIZE", "512")
-env.Dump(size)
-// #int64 1048576
-```
-
-_Example: fallback when unset_
-
-```go
-os.Unsetenv("MAX_SIZE")
-size = env.GetInt64("MAX_SIZE", "512")
-env.Dump(size)
-// #int64 512
-```
-
-### <a id="getmap"></a>GetMap
-
-GetMap returns the string map value for key within the scope.
-
-_Example: parse throttling config_
-
-```go
-_ = os.Setenv("LIMITS", "read=10, write=5, burst=20")
-limits := env.GetMap("LIMITS", "")
-env.Dump(limits)
-// #map[string]string [
-//  "burst" => "20" #string
-//  "read"  => "10" #string
-//  "write" => "5" #string
-// ]
-```
-
-_Example: returns empty map when unset or blank_
-
-```go
-os.Unsetenv("LIMITS")
-limits = env.GetMap("LIMITS", "")
-env.Dump(limits)
-// #map[string]string []
-```
-
-### <a id="getmapint"></a>GetMapInt
-
-GetMapInt returns the int map value for key within the scope.
-
-_Example: parse worker queue weights_
-
-```go
-_ = os.Setenv("QUEUE_WEIGHTS", "critical=6, default=3, low=1")
-weights := env.GetMapInt("QUEUE_WEIGHTS", "", 1)
-env.Dump(weights)
-// #map[string]int [
-//  "critical" => 6 #int
-//  "default"  => 3 #int
-//  "low"      => 1 #int
-// ]
-```
-
-_Example: invalid values use defaultValue_
-
-```go
-os.Unsetenv("QUEUE_WEIGHTS")
-weights = env.GetMapInt("QUEUE_WEIGHTS", "critical=,default=0,low=nope,misc", 2)
-env.Dump(weights)
-// #map[string]int [
-//  "critical" => 2 #int
-//  "default"  => 2 #int
-//  "low"      => 2 #int
-//  "misc"     => 2 #int
-// ]
-```
-
-### <a id="getslice"></a>GetSlice
-
-GetSlice returns the string slice value for key within the scope.
-
-_Example: trimmed addresses_
-
-```go
-_ = os.Setenv("PEERS", "10.0.0.1, 10.0.0.2")
-peers := env.GetSlice("PEERS", "")
-env.Dump(peers)
-// #[]string [
-//  0 => "10.0.0.1" #string
-//  1 => "10.0.0.2" #string
-// ]
-```
-
-_Example: empty becomes empty slice_
-
-```go
-os.Unsetenv("PEERS")
-peers = env.GetSlice("PEERS", "")
-env.Dump(peers)
-// #[]string []
-```
-
-### <a id="getuint"></a>GetUint
-
-GetUint returns the uint value for key within the scope.
-
-_Example: defaults to fallback when missing_
-
-```go
-os.Unsetenv("WORKERS")
-workers := env.GetUint("WORKERS", "4")
-env.Dump(workers)
-// #uint 4
-```
-
-_Example: uses provided unsigned value_
-
-```go
-_ = os.Setenv("WORKERS", "16")
-workers = env.GetUint("WORKERS", "4")
-env.Dump(workers)
-// #uint 16
-```
-
-### <a id="getuint64"></a>GetUint64
-
-GetUint64 returns the uint64 value for key within the scope.
-
-_Example: high range values_
-
-```go
-_ = os.Setenv("MAX_ITEMS", "5000")
-maxItems := env.GetUint64("MAX_ITEMS", "100")
-env.Dump(maxItems)
-// #uint64 5000
-```
-
-_Example: fallback when unset_
-
-```go
-os.Unsetenv("MAX_ITEMS")
-maxItems = env.GetUint64("MAX_ITEMS", "100")
-env.Dump(maxItems)
-// #uint64 100
-```
-
-### <a id="key"></a>Key
-
-Key builds the fully qualified environment key for key within the scope.
 
 ## Runtime
 
@@ -887,7 +619,348 @@ env.Dump(env.OS())
 
 ## Typed getters
 
-### <a id="child"></a>Child
+### <a id="get"></a>Get
+
+Get returns the environment variable for key or fallback when empty.
+
+_Example: fallback when unset_
+
+```go
+os.Unsetenv("DB_HOST")
+host := env.Get("DB_HOST", "localhost")
+env.Dump(host)
+// #string "localhost"
+```
+
+_Example: prefer existing value_
+
+```go
+_ = os.Setenv("DB_HOST", "db.internal")
+host = env.Get("DB_HOST", "localhost")
+env.Dump(host)
+// #string "db.internal"
+```
+
+### <a id="getbool"></a>GetBool
+
+GetBool parses a boolean from an environment variable or fallback string.
+
+_Example: numeric truthy_
+
+```go
+_ = os.Setenv("DEBUG", "1")
+debug := env.GetBool("DEBUG", "false")
+env.Dump(debug)
+// #bool true
+```
+
+_Example: fallback string_
+
+```go
+os.Unsetenv("DEBUG")
+debug = env.GetBool("DEBUG", "false")
+env.Dump(debug)
+// #bool false
+```
+
+### <a id="getduration"></a>GetDuration
+
+GetDuration parses a Go duration string (e.g. "5s", "10m", "1h").
+
+_Example: override request timeout_
+
+```go
+_ = os.Setenv("HTTP_TIMEOUT", "30s")
+timeout := env.GetDuration("HTTP_TIMEOUT", "5s")
+env.Dump(timeout)
+// #time.Duration 30s
+```
+
+_Example: fallback when unset_
+
+```go
+os.Unsetenv("HTTP_TIMEOUT")
+timeout = env.GetDuration("HTTP_TIMEOUT", "5s")
+env.Dump(timeout)
+// #time.Duration 5s
+```
+
+### <a id="getenum"></a>GetEnum
+
+GetEnum returns the environment value when allowed and fallback otherwise.
+
+_Example: accept only staged environments_
+
+```go
+_ = os.Setenv("APP_ENV", "production")
+appEnv := env.GetEnum("APP_ENV", "local", []string{"local", "staging", "production"})
+env.Dump(appEnv)
+// #string "production"
+```
+
+_Example: fallback when unset_
+
+```go
+os.Unsetenv("APP_ENV")
+appEnv = env.GetEnum("APP_ENV", "local", []string{"local", "staging", "production"})
+env.Dump(appEnv)
+// #string "local"
+```
+
+### <a id="getfloat"></a>GetFloat
+
+GetFloat parses a float64 from an environment variable or fallback string.
+
+_Example: override threshold_
+
+```go
+_ = os.Setenv("THRESHOLD", "0.82")
+threshold := env.GetFloat("THRESHOLD", "0.75")
+env.Dump(threshold)
+// #float64 0.82
+```
+
+_Example: fallback with decimal string_
+
+```go
+os.Unsetenv("THRESHOLD")
+threshold = env.GetFloat("THRESHOLD", "0.75")
+env.Dump(threshold)
+// #float64 0.75
+```
+
+### <a id="getint"></a>GetInt
+
+GetInt parses an int from an environment variable or fallback string.
+
+_Example: fallback used_
+
+```go
+os.Unsetenv("PORT")
+port := env.GetInt("PORT", "3000")
+env.Dump(port)
+// #int 3000
+```
+
+_Example: env overrides fallback_
+
+```go
+_ = os.Setenv("PORT", "8080")
+port = env.GetInt("PORT", "3000")
+env.Dump(port)
+// #int 8080
+```
+
+### <a id="getint64"></a>GetInt64
+
+GetInt64 parses an int64 from an environment variable or fallback string.
+
+_Example: parse large numbers safely_
+
+```go
+_ = os.Setenv("MAX_SIZE", "1048576")
+size := env.GetInt64("MAX_SIZE", "512")
+env.Dump(size)
+// #int64 1048576
+```
+
+_Example: fallback when unset_
+
+```go
+os.Unsetenv("MAX_SIZE")
+size = env.GetInt64("MAX_SIZE", "512")
+env.Dump(size)
+// #int64 512
+```
+
+### <a id="getmap"></a>GetMap
+
+GetMap parses trimmed key=value pairs separated by commas into a map.
+
+_Example: parse throttling config_
+
+```go
+_ = os.Setenv("LIMITS", "read=10, write=5, burst=20")
+limits := env.GetMap("LIMITS", "")
+env.Dump(limits)
+// #map[string]string [
+//  "burst" => "20" #string
+//  "read"  => "10" #string
+//  "write" => "5" #string
+// ]
+```
+
+_Example: returns empty map when unset or blank_
+
+```go
+os.Unsetenv("LIMITS")
+limits = env.GetMap("LIMITS", "")
+env.Dump(limits)
+// #map[string]string []
+```
+
+### <a id="getmapint"></a>GetMapInt
+
+GetMapInt parses key=int pairs separated by commas into a map.
+Invalid, missing, or non-positive values fall back to defaultValue.
+
+_Example: parse worker queue weights_
+
+```go
+_ = os.Setenv("QUEUE_WEIGHTS", "critical=6, default=3, low=1")
+weights := env.GetMapInt("QUEUE_WEIGHTS", "", 1)
+env.Dump(weights)
+// #map[string]int [
+//  "critical" => 6 #int
+//  "default"  => 3 #int
+//  "low"      => 1 #int
+// ]
+```
+
+_Example: invalid values use defaultValue_
+
+```go
+os.Unsetenv("QUEUE_WEIGHTS")
+weights = env.GetMapInt("QUEUE_WEIGHTS", "critical=,default=0,low=nope,misc", 2)
+env.Dump(weights)
+// #map[string]int [
+//  "critical" => 2 #int
+//  "default"  => 2 #int
+//  "low"      => 2 #int
+//  "misc"     => 2 #int
+// ]
+```
+
+### <a id="getslice"></a>GetSlice
+
+GetSlice splits a comma-separated string into a []string with trimming.
+
+_Example: trimmed addresses_
+
+```go
+_ = os.Setenv("PEERS", "10.0.0.1, 10.0.0.2")
+peers := env.GetSlice("PEERS", "")
+env.Dump(peers)
+// #[]string [
+//  0 => "10.0.0.1" #string
+//  1 => "10.0.0.2" #string
+// ]
+```
+
+_Example: empty becomes empty slice_
+
+```go
+os.Unsetenv("PEERS")
+peers = env.GetSlice("PEERS", "")
+env.Dump(peers)
+// #[]string []
+```
+
+### <a id="getuint"></a>GetUint
+
+GetUint parses a uint from an environment variable or fallback string.
+
+_Example: defaults to fallback when missing_
+
+```go
+os.Unsetenv("WORKERS")
+workers := env.GetUint("WORKERS", "4")
+env.Dump(workers)
+// #uint 4
+```
+
+_Example: uses provided unsigned value_
+
+```go
+_ = os.Setenv("WORKERS", "16")
+workers = env.GetUint("WORKERS", "4")
+env.Dump(workers)
+// #uint 16
+```
+
+### <a id="getuint64"></a>GetUint64
+
+GetUint64 parses a uint64 from an environment variable or fallback string.
+
+_Example: high range values_
+
+```go
+_ = os.Setenv("MAX_ITEMS", "5000")
+maxItems := env.GetUint64("MAX_ITEMS", "100")
+env.Dump(maxItems)
+// #uint64 5000
+```
+
+_Example: fallback when unset_
+
+```go
+os.Unsetenv("MAX_ITEMS")
+maxItems = env.GetUint64("MAX_ITEMS", "100")
+env.Dump(maxItems)
+// #uint64 100
+```
+
+### <a id="mustget"></a>MustGet
+
+MustGet returns the value of key or panics if missing/empty.
+
+_Example: required secret_
+
+```go
+_ = os.Setenv("API_SECRET", "s3cr3t")
+secret := env.MustGet("API_SECRET")
+env.Dump(secret)
+// #string "s3cr3t"
+```
+
+_Example: panic on missing value_
+
+```go
+os.Unsetenv("API_SECRET")
+secret = env.MustGet("API_SECRET") // panics: env variable missing: API_SECRET
+```
+
+### <a id="mustgetbool"></a>MustGetBool
+
+MustGetBool returns a required bool or panics when the value is missing or invalid.
+
+_Example: gate features explicitly_
+
+```go
+_ = os.Setenv("FEATURE_ENABLED", "true")
+enabled := env.MustGetBool("FEATURE_ENABLED")
+env.Dump(enabled)
+// #bool true
+```
+
+_Example: panic on invalid value_
+
+```go
+_ = os.Setenv("FEATURE_ENABLED", "maybe")
+_ = env.MustGetBool("FEATURE_ENABLED") // panics when parsing
+```
+
+### <a id="mustgetint"></a>MustGetInt
+
+MustGetInt returns a required int or panics when the value is missing or invalid.
+
+_Example: ensure numeric port_
+
+```go
+_ = os.Setenv("PORT", "8080")
+port := env.MustGetInt("PORT")
+env.Dump(port)
+// #int 8080
+```
+
+_Example: panic on bad value_
+
+```go
+_ = os.Setenv("PORT", "not-a-number")
+_ = env.MustGetInt("PORT") // panics when parsing
+```
+
+### <a id="scope-child"></a>Scope.Child
 
 Child returns a new scope rooted at the current prefix plus name.
 
@@ -905,7 +978,7 @@ env.Dump(
 // #string "storage/app/public"
 ```
 
-### <a id="childnames"></a>ChildNames
+### <a id="scope-childnames"></a>Scope.ChildNames
 
 ChildNames discovers named child scopes under the current prefix.
 
@@ -931,65 +1004,57 @@ env.Dump(names)
 // ]
 ```
 
-### <a id="mustget"></a>MustGet
+### <a id="scope-get"></a>Scope.Get
 
-MustGet returns the value of key or panics if missing/empty.
+Get returns the string value for key within the scope.
 
-_Example: required secret_
+### <a id="scope-getbool"></a>Scope.GetBool
 
-```go
-_ = os.Setenv("API_SECRET", "s3cr3t")
-secret := env.MustGet("API_SECRET")
-env.Dump(secret)
-// #string "s3cr3t"
-```
+GetBool returns the bool value for key within the scope.
 
-_Example: panic on missing value_
+### <a id="scope-getduration"></a>Scope.GetDuration
 
-```go
-os.Unsetenv("API_SECRET")
-secret = env.MustGet("API_SECRET") // panics: env variable missing: API_SECRET
-```
+GetDuration returns the duration value for key within the scope.
 
-### <a id="mustgetbool"></a>MustGetBool
+### <a id="scope-getenum"></a>Scope.GetEnum
 
-MustGetBool panics if missing or invalid.
+GetEnum returns the enum value for key within the scope.
 
-_Example: gate features explicitly_
+### <a id="scope-getfloat"></a>Scope.GetFloat
 
-```go
-_ = os.Setenv("FEATURE_ENABLED", "true")
-enabled := env.MustGetBool("FEATURE_ENABLED")
-env.Dump(enabled)
-// #bool true
-```
+GetFloat returns the float64 value for key within the scope.
 
-_Example: panic on invalid value_
+### <a id="scope-getint"></a>Scope.GetInt
 
-```go
-_ = os.Setenv("FEATURE_ENABLED", "maybe")
-_ = env.MustGetBool("FEATURE_ENABLED") // panics when parsing
-```
+GetInt returns the int value for key within the scope.
 
-### <a id="mustgetint"></a>MustGetInt
+### <a id="scope-getint64"></a>Scope.GetInt64
 
-MustGetInt panics if the value is missing or not an int.
+GetInt64 returns the int64 value for key within the scope.
 
-_Example: ensure numeric port_
+### <a id="scope-getmap"></a>Scope.GetMap
 
-```go
-_ = os.Setenv("PORT", "8080")
-port := env.MustGetInt("PORT")
-env.Dump(port)
-// #int 8080
-```
+GetMap returns the string map value for key within the scope.
 
-_Example: panic on bad value_
+### <a id="scope-getmapint"></a>Scope.GetMapInt
 
-```go
-_ = os.Setenv("PORT", "not-a-number")
-_ = env.MustGetInt("PORT") // panics when parsing
-```
+GetMapInt returns the int map value for key within the scope.
+
+### <a id="scope-getslice"></a>Scope.GetSlice
+
+GetSlice returns the string slice value for key within the scope.
+
+### <a id="scope-getuint"></a>Scope.GetUint
+
+GetUint returns the uint value for key within the scope.
+
+### <a id="scope-getuint64"></a>Scope.GetUint64
+
+GetUint64 returns the uint64 value for key within the scope.
+
+### <a id="scope-key"></a>Scope.Key
+
+Key builds the fully qualified environment key for key within the scope.
 
 ### <a id="withprefix"></a>WithPrefix
 

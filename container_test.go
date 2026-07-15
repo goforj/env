@@ -12,20 +12,21 @@ var (
 	realGetEnv   = getEnv
 )
 
-// Reset all shims after each test.
+// reset restores process-detection shims so tests remain isolated.
 func reset() {
 	statFile = realStatFile
 	readFile = realReadFile
 	getEnv = realGetEnv
 }
 
-// Helper for tests.
+// mockEnv isolates environment lookup from the host running the tests.
 func mockEnv(vars map[string]string) {
 	getEnv = func(key string) string {
 		return vars[key]
 	}
 }
 
+// TestIsDocker_DockerenvExists ensures Docker's root marker is sufficient evidence of containment.
 func TestIsDocker_DockerenvExists(t *testing.T) {
 	defer reset()
 
@@ -45,6 +46,7 @@ func TestIsDocker_DockerenvExists(t *testing.T) {
 	}
 }
 
+// TestIsDocker_CgroupDetectsContainer ensures Docker cgroup membership works when the marker file is absent.
 func TestIsDocker_CgroupDetectsContainer(t *testing.T) {
 	defer reset()
 
@@ -61,6 +63,7 @@ func TestIsDocker_CgroupDetectsContainer(t *testing.T) {
 	}
 }
 
+// TestIsDocker_False ensures clean host evidence is not misclassified as Docker.
 func TestIsDocker_False(t *testing.T) {
 	defer reset()
 
@@ -77,6 +80,7 @@ func TestIsDocker_False(t *testing.T) {
 	}
 }
 
+// TestIsDind_True ensures a mounted Docker socket inside Docker identifies nested daemon access.
 func TestIsDind_True(t *testing.T) {
 	defer reset()
 
@@ -100,6 +104,7 @@ func TestIsDind_True(t *testing.T) {
 	}
 }
 
+// TestIsDind_FalseWhenNormalContainer ensures ordinary containers without a daemon socket are not marked Docker-in-Docker.
 func TestIsDind_FalseWhenNormalContainer(t *testing.T) {
 	defer reset()
 
@@ -119,6 +124,7 @@ func TestIsDind_FalseWhenNormalContainer(t *testing.T) {
 	}
 }
 
+// TestIsDockerInDocker_NoDockerenv ensures a host socket alone does not imply nested Docker.
 func TestIsDockerInDocker_NoDockerenv(t *testing.T) {
 	defer reset()
 
@@ -129,6 +135,7 @@ func TestIsDockerInDocker_NoDockerenv(t *testing.T) {
 	}
 }
 
+// TestIsDockerInDocker_DockerenvNoSocket ensures a container marker alone does not imply nested daemon access.
 func TestIsDockerInDocker_DockerenvNoSocket(t *testing.T) {
 	defer reset()
 
@@ -144,6 +151,7 @@ func TestIsDockerInDocker_DockerenvNoSocket(t *testing.T) {
 	}
 }
 
+// TestIsDockerHost_True ensures a reachable Docker socket with host cgroups identifies a Docker host.
 func TestIsDockerHost_True(t *testing.T) {
 	defer reset()
 
@@ -163,6 +171,7 @@ func TestIsDockerHost_True(t *testing.T) {
 	}
 }
 
+// TestIsDockerHost_FalseWhenNamespaced ensures container cgroups take precedence over a mounted socket.
 func TestIsDockerHost_FalseWhenNamespaced(t *testing.T) {
 	defer reset()
 
@@ -182,6 +191,30 @@ func TestIsDockerHost_FalseWhenNamespaced(t *testing.T) {
 	}
 }
 
+// TestIsDockerHostFalseForNonDockerContainerMarkers ensures other container runtimes are not mistaken for Docker hosts.
+func TestIsDockerHostFalseForNonDockerContainerMarkers(t *testing.T) {
+	markers := []string{"container", "kubepods", "containerd", "podman", "libpod"}
+	for _, marker := range markers {
+		t.Run(marker, func(t *testing.T) {
+			defer reset()
+			statFile = func(path string) (os.FileInfo, error) {
+				if path == fileDockerSock {
+					return nil, nil
+				}
+				return nil, os.ErrNotExist
+			}
+			readFile = func(string) ([]byte, error) {
+				return []byte("0::/" + marker + "/workload"), nil
+			}
+
+			if IsDockerHost() {
+				t.Fatalf("expected %s cgroup marker to reject Docker-host detection", marker)
+			}
+		})
+	}
+}
+
+// TestIsDockerHost_NoSocket ensures host classification requires Docker daemon evidence.
 func TestIsDockerHost_NoSocket(t *testing.T) {
 	defer reset()
 
@@ -191,6 +224,7 @@ func TestIsDockerHost_NoSocket(t *testing.T) {
 	}
 }
 
+// TestIsDockerHost_ReadError ensures unreadable cgroup state fails closed.
 func TestIsDockerHost_ReadError(t *testing.T) {
 	defer reset()
 
@@ -207,6 +241,7 @@ func TestIsDockerHost_ReadError(t *testing.T) {
 	}
 }
 
+// TestIsKubernetes_EnvVar ensures the service environment marker identifies Kubernetes pods.
 func TestIsKubernetes_EnvVar(t *testing.T) {
 	defer reset()
 
@@ -219,6 +254,7 @@ func TestIsKubernetes_EnvVar(t *testing.T) {
 	}
 }
 
+// TestIsKubernetes_Cgroup ensures pod cgroup membership identifies Kubernetes without environment injection.
 func TestIsKubernetes_Cgroup(t *testing.T) {
 	defer reset()
 
@@ -233,6 +269,7 @@ func TestIsKubernetes_Cgroup(t *testing.T) {
 	}
 }
 
+// TestIsKubernetes_False ensures clean host evidence is not misclassified as Kubernetes.
 func TestIsKubernetes_False(t *testing.T) {
 	defer reset()
 
@@ -247,6 +284,7 @@ func TestIsKubernetes_False(t *testing.T) {
 	}
 }
 
+// TestIsContainer_Docker ensures Docker evidence contributes to the aggregate container result.
 func TestIsContainer_Docker(t *testing.T) {
 	defer reset()
 
@@ -262,6 +300,25 @@ func TestIsContainer_Docker(t *testing.T) {
 	}
 }
 
+// TestIsContainerPodmanMarker ensures Podman's standard marker participates in aggregate detection.
+func TestIsContainerPodmanMarker(t *testing.T) {
+	defer reset()
+
+	statFile = func(path string) (os.FileInfo, error) {
+		if path == fileContainerEnv {
+			return nil, nil
+		}
+		return nil, os.ErrNotExist
+	}
+	readFile = func(string) ([]byte, error) { return nil, os.ErrNotExist }
+	mockEnv(nil)
+
+	if !IsContainer() {
+		t.Fatal("expected /run/.containerenv to identify a Podman container")
+	}
+}
+
+// TestIsContainer_ContainerCgroup ensures generic container cgroups are recognized without vendor markers.
 func TestIsContainer_ContainerCgroup(t *testing.T) {
 	defer reset()
 
@@ -276,6 +333,7 @@ func TestIsContainer_ContainerCgroup(t *testing.T) {
 	}
 }
 
+// TestIsContainer_Kubernetes ensures Kubernetes evidence contributes to the aggregate container result.
 func TestIsContainer_Kubernetes(t *testing.T) {
 	defer reset()
 
@@ -288,6 +346,7 @@ func TestIsContainer_Kubernetes(t *testing.T) {
 	}
 }
 
+// TestIsContainer_False ensures an ordinary host remains outside the aggregate container classification.
 func TestIsContainer_False(t *testing.T) {
 	defer reset()
 
@@ -306,6 +365,7 @@ func TestIsContainer_False(t *testing.T) {
 	}
 }
 
+// TestIsContainer_ReadErrorButEnvPresent ensures strong environment evidence survives unavailable cgroup data.
 func TestIsContainer_ReadErrorButEnvPresent(t *testing.T) {
 	defer reset()
 
@@ -318,6 +378,7 @@ func TestIsContainer_ReadErrorButEnvPresent(t *testing.T) {
 	}
 }
 
+// TestIsContainer_ReadErrorNoEnv ensures missing evidence and unreadable cgroups fail closed.
 func TestIsContainer_ReadErrorNoEnv(t *testing.T) {
 	defer reset()
 
@@ -330,6 +391,7 @@ func TestIsContainer_ReadErrorNoEnv(t *testing.T) {
 	}
 }
 
+// TestIsContainer_EnvWinsWhenCgroupClean ensures explicit container metadata outranks neutral cgroup text.
 func TestIsContainer_EnvWinsWhenCgroupClean(t *testing.T) {
 	defer reset()
 
@@ -342,6 +404,7 @@ func TestIsContainer_EnvWinsWhenCgroupClean(t *testing.T) {
 	}
 }
 
+// TestIsContainer_GenericContainerCgroup ensures runtime-neutral cgroup markers remain supported.
 func TestIsContainer_GenericContainerCgroup(t *testing.T) {
 	defer reset()
 

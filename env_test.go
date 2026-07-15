@@ -1,24 +1,34 @@
 package env
 
 import (
+	"math/bits"
 	"os"
 	"reflect"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 )
 
-// Helper: temporarily set an env var and restore after
+// withEnv restores presence as well as value so empty and unset remain distinct between tests.
 func withEnv(key, val string, fn func()) {
-	original := os.Getenv(key)
+	original, present := os.LookupEnv(key)
+	defer func() {
+		if present {
+			_ = os.Setenv(key, original)
+			return
+		}
+		_ = os.Unsetenv(key)
+	}()
 	if val == "" {
 		_ = os.Unsetenv(key)
 	} else {
 		_ = os.Setenv(key, val)
 	}
 	fn()
-	_ = os.Setenv(key, original)
 }
 
+// TestGet ensures missing strings use the fallback while present values win.
 func TestGet(t *testing.T) {
 	withEnv("FOO", "bar", func() {
 		if got := Get("FOO", "fallback"); got != "bar" {
@@ -33,6 +43,7 @@ func TestGet(t *testing.T) {
 	})
 }
 
+// TestGetInt ensures decimal integers parse without changing fallback semantics.
 func TestGetInt(t *testing.T) {
 	withEnv("PORT", "8080", func() {
 		if got := GetInt("PORT", "1234"); got != 8080 {
@@ -41,6 +52,7 @@ func TestGetInt(t *testing.T) {
 	})
 }
 
+// TestGetInt64 ensures full-width signed values are preserved.
 func TestGetInt64(t *testing.T) {
 	withEnv("MAX", "9223372036854775807", func() {
 		if got := GetInt64("MAX", "0"); got != 9223372036854775807 {
@@ -49,6 +61,7 @@ func TestGetInt64(t *testing.T) {
 	})
 }
 
+// TestGetUint ensures unsigned values reject invalid text through the fallback path.
 func TestGetUint(t *testing.T) {
 	withEnv("COUNT", "42", func() {
 		if got := GetUint("COUNT", "1"); got != 42 {
@@ -57,6 +70,20 @@ func TestGetUint(t *testing.T) {
 	})
 }
 
+// TestGetUintUsesNativeWidth ensures overflow behavior follows the target architecture's uint size.
+func TestGetUintUsesNativeWidth(t *testing.T) {
+	if bits.UintSize != 64 {
+		t.Skip("native-width assertion requires a 64-bit uint")
+	}
+	value := strconv.FormatUint(uint64(1)<<40, 10)
+	withEnv("ENV_QPASS_NATIVE_UINT", value, func() {
+		if got := GetUint("ENV_QPASS_NATIVE_UINT", "0"); got != uint(1)<<40 {
+			t.Fatalf("expected native-width uint, got %d", got)
+		}
+	})
+}
+
+// TestGetUint64 ensures full-width unsigned values are preserved.
 func TestGetUint64(t *testing.T) {
 	withEnv("BIGCOUNT", "10000", func() {
 		if got := GetUint64("BIGCOUNT", "1"); got != 10000 {
@@ -65,6 +92,7 @@ func TestGetUint64(t *testing.T) {
 	})
 }
 
+// TestGetFloat ensures floating-point values parse without losing fallback behavior.
 func TestGetFloat(t *testing.T) {
 	withEnv("THRESH", "0.75", func() {
 		if got := GetFloat("THRESH", "1.0"); got != 0.75 {
@@ -73,6 +101,7 @@ func TestGetFloat(t *testing.T) {
 	})
 }
 
+// TestGetBool ensures standard boolean spellings map predictably.
 func TestGetBool(t *testing.T) {
 	withEnv("DEBUG", "true", func() {
 		if !GetBool("DEBUG", "false") {
@@ -81,6 +110,7 @@ func TestGetBool(t *testing.T) {
 	})
 }
 
+// TestGetDuration ensures Go duration syntax is honored with a safe fallback.
 func TestGetDuration(t *testing.T) {
 	withEnv("TIMEOUT", "5s", func() {
 		if got := GetDuration("TIMEOUT", "1s"); got != 5*time.Second {
@@ -89,6 +119,7 @@ func TestGetDuration(t *testing.T) {
 	})
 }
 
+// TestGetSlice ensures delimited values are trimmed into stable elements.
 func TestGetSlice(t *testing.T) {
 	withEnv("PEERS", "a,b,c", func() {
 		got := GetSlice("PEERS", "")
@@ -99,8 +130,9 @@ func TestGetSlice(t *testing.T) {
 	})
 }
 
+// TestGetMap ensures delimited key-value text is trimmed and parsed deterministically.
 func TestGetMap(t *testing.T) {
-	withEnv("LIMITS", "read=10,write=5", func() {
+	withEnv("LIMITS", " read = 10 ,write= 5, =ignored ", func() {
 		got := GetMap("LIMITS", "")
 		expected := map[string]string{"read": "10", "write": "5"}
 		if !reflect.DeepEqual(got, expected) {
@@ -109,6 +141,7 @@ func TestGetMap(t *testing.T) {
 	})
 }
 
+// TestGetMapInt ensures numeric map values reject malformed entries through the fallback path.
 func TestGetMapInt(t *testing.T) {
 	t.Run("parses valid values", func(t *testing.T) {
 		withEnv("QUEUE_WEIGHTS", "critical=6, default=3, low=1", func() {
@@ -160,6 +193,7 @@ func TestGetMapInt(t *testing.T) {
 	})
 }
 
+// TestGetEnum ensures only explicitly allowed values are returned.
 func TestGetEnum(t *testing.T) {
 	withEnv("APP_ENV", "staging", func() {
 		got := GetEnum("APP_ENV", "local", []string{"local", "staging", "production"})
@@ -169,6 +203,7 @@ func TestGetEnum(t *testing.T) {
 	})
 }
 
+// TestGetEnumInvalid ensures disallowed configured values fall back safely.
 func TestGetEnumInvalid(t *testing.T) {
 	withEnv("APP_ENV", "invalid", func() {
 		if got := GetEnum("APP_ENV", "local", []string{"local", "staging", "production"}); got != "local" {
@@ -177,6 +212,7 @@ func TestGetEnumInvalid(t *testing.T) {
 	})
 }
 
+// TestGetEnumFallbackNotAllowed ensures caller fallbacks need not appear in the allowed configured set.
 func TestGetEnumFallbackNotAllowed(t *testing.T) {
 	withEnv("APP_ENV", "unknown", func() {
 		if got := GetEnum("APP_ENV", "invalid-fallback", []string{"local", "staging"}); got != "invalid-fallback" {
@@ -185,6 +221,7 @@ func TestGetEnumFallbackNotAllowed(t *testing.T) {
 	})
 }
 
+// TestSliceAndMapEmptyFallbacks ensures empty input does not fabricate collection elements.
 func TestSliceAndMapEmptyFallbacks(t *testing.T) {
 	withEnv("EMPTY_SLICE", "", func() {
 		got := GetSlice("EMPTY_SLICE", "")
@@ -201,6 +238,7 @@ func TestSliceAndMapEmptyFallbacks(t *testing.T) {
 	})
 }
 
+// TestMustGet ensures required strings are returned without fallback ambiguity.
 func TestMustGet(t *testing.T) {
 	withEnv("SECRET", "abc123", func() {
 		if MustGet("SECRET") != "abc123" {
@@ -209,6 +247,7 @@ func TestMustGet(t *testing.T) {
 	})
 }
 
+// TestMustGetMissing ensures absent required strings fail fast.
 func TestMustGetMissing(t *testing.T) {
 	defer func() {
 		if recover() == nil {
@@ -220,6 +259,7 @@ func TestMustGetMissing(t *testing.T) {
 	})
 }
 
+// TestMustGetInt ensures required integers return their parsed value.
 func TestMustGetInt(t *testing.T) {
 	withEnv("PORTX", "9000", func() {
 		if MustGetInt("PORTX") != 9000 {
@@ -228,6 +268,18 @@ func TestMustGetInt(t *testing.T) {
 	})
 }
 
+// TestMustGetIntPanicsOnMissingAndInvalid ensures required integer configuration fails fast on absence or corruption.
+func TestMustGetIntPanicsOnMissingAndInvalid(t *testing.T) {
+	for _, value := range []string{"", "not-an-int"} {
+		t.Run(value, func(t *testing.T) {
+			withEnv("ENV_QPASS_REQUIRED_INT", value, func() {
+				expectPanic(t, "MustGetInt", func() { MustGetInt("ENV_QPASS_REQUIRED_INT") })
+			})
+		})
+	}
+}
+
+// TestMustGetBool ensures required booleans return their parsed value.
 func TestMustGetBool(t *testing.T) {
 	withEnv("ENABLED", "true", func() {
 		if !MustGetBool("ENABLED") {
@@ -236,6 +288,31 @@ func TestMustGetBool(t *testing.T) {
 	})
 }
 
+// TestMustGetBoolPanicsOnMissingAndInvalid ensures required boolean configuration fails fast on absence or corruption.
+func TestMustGetBoolPanicsOnMissingAndInvalid(t *testing.T) {
+	for _, value := range []string{"", "not-a-bool"} {
+		t.Run(value, func(t *testing.T) {
+			withEnv("ENV_QPASS_REQUIRED_BOOL", value, func() {
+				expectPanic(t, "MustGetBool", func() { MustGetBool("ENV_QPASS_REQUIRED_BOOL") })
+			})
+		})
+	}
+}
+
+// FuzzGetMap verifies malformed map entries never panic or produce blank keys.
+func FuzzGetMap(f *testing.F) {
+	f.Add("read=10, write = 5")
+	f.Add("malformed,=empty-key,key=")
+	f.Fuzz(func(t *testing.T, value string) {
+		for key := range parseStringMap(value) {
+			if strings.TrimSpace(key) == "" {
+				t.Fatal("GetMap returned an empty key")
+			}
+		}
+	})
+}
+
+// TestGettersReturnFallbackOnBadValues ensures optional typed configuration never leaks parse failures as zero values.
 func TestGettersReturnFallbackOnBadValues(t *testing.T) {
 	withEnv("BAD_INT", "nope", func() {
 		if got := GetInt("BAD_INT", "10"); got != 10 {

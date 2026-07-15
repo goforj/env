@@ -2,13 +2,22 @@ name: Go Test
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
-  test:
+  quality:
+    name: Go ${{ matrix.go-version }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: ["1.24.x", "stable"]
 
     steps:
       - name: Checkout
@@ -17,26 +26,42 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "stable"
+          go-version: ${{ matrix.go-version }}
+          cache-dependency-path: |
+            go.sum
+            examples/go.sum
 
-      - name: Install dependencies
-        run: go mod tidy
+      - name: Verify module metadata
+        run: |
+          go mod tidy -diff
+          cd examples
+          go mod tidy -diff
 
-      - name: Run root module tests
-        run: go test ./... -v
+      - name: Vet root module
+        run: go vet ./...
 
-      - name: Install examples module dependencies
+      - name: Test root module with race detection
+        run: go test -race -covermode=atomic -coverprofile=coverage.txt ./...
+
+      - name: Enforce coverage floor
+        run: |
+          total="$(go tool cover -func=coverage.txt | awk '/^total:/ {gsub("%", "", $3); print $3}')"
+          awk -v total="$total" 'BEGIN { if (total < 95) { printf "coverage %.1f%% is below 95%%\n", total; exit 1 } }'
+
+      - name: Verify generated documentation
+        if: matrix.go-version == 'stable'
+        run: |
+          go generate ./...
+          git diff --exit-code
+
+      - name: Build generated examples
         working-directory: examples
-        run: go mod tidy
+        run: go test ./...
 
-      - name: Run examples module tests
-        working-directory: examples
-        run: go test ./... -v
-
-      - name: Run tests with coverage
-        run: go test -coverprofile=coverage.txt
-
-      - name: Upload results to Codecov
+      - name: Upload coverage
+        if: matrix.go-version == 'stable'
         uses: codecov/codecov-action@v5
+        with:
+          files: coverage.txt
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

@@ -5,6 +5,7 @@ import (
 	"testing"
 )
 
+// TestIsHostEnvironment_Host ensures absent container evidence identifies a host environment.
 func TestIsHostEnvironment_Host(t *testing.T) {
 	t.Cleanup(reset)
 

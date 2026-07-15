@@ -5,6 +5,7 @@ import (
 	"testing"
 )
 
+// TestIsTestSuffixFromArguments ensures Go test-process arguments identify the testing runtime.
 func TestIsTestSuffixFromArguments(t *testing.T) {
 	original := os.Args
 	defer func() { os.Args = original }()
@@ -20,6 +21,14 @@ func TestIsTestSuffixFromArguments(t *testing.T) {
 	}
 }
 
+// TestIsAppEnvTestingRecognizesTestProcess ensures test binaries are treated as testing even without APP_ENV.
+func TestIsAppEnvTestingRecognizesTestProcess(t *testing.T) {
+	if !IsAppEnvTesting() {
+		t.Fatal("expected the Go test process marker to select testing")
+	}
+}
+
+// TestAppEnvHelpers ensures each named application mode has an exclusive predicate.
 func TestAppEnvHelpers(t *testing.T) {
 	t.Cleanup(func() { _ = os.Unsetenv("APP_ENV") })
 
@@ -50,6 +59,7 @@ func TestAppEnvHelpers(t *testing.T) {
 	}
 }
 
+// TestSetAppEnv ensures explicit application mode changes update process state.
 func TestSetAppEnv(t *testing.T) {
 	t.Cleanup(func() { _ = os.Unsetenv("APP_ENV") })
 
@@ -69,6 +79,7 @@ func TestSetAppEnv(t *testing.T) {
 	}
 }
 
+// TestSetAppEnvHelpers ensures convenience setters select their documented modes.
 func TestSetAppEnvHelpers(t *testing.T) {
 	t.Cleanup(func() { _ = os.Unsetenv("APP_ENV") })
 
