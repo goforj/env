@@ -13,6 +13,11 @@ package env
 //	// #bool true  (on bare-metal/VM hosts)
 //	// #bool false (inside containers)
 func IsHostEnvironment() bool {
-	return !IsContainer() &&
+	return isHostEnvironmentWithEnv(getEnv)
+}
+
+// isHostEnvironmentWithEnv evaluates host detection against a caller-supplied environment view.
+func isHostEnvironmentWithEnv(getenv func(string) string) bool {
+	return !isContainerWithEnv(getenv) &&
 		!IsDockerInDocker()
 }

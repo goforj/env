@@ -7,11 +7,14 @@ import (
 	"strings"
 )
 
-// environment helpers
 const (
-	Testing    = "testing"
-	Local      = "local"
-	Staging    = "staging"
+	// Testing identifies the test application environment.
+	Testing = "testing"
+	// Local identifies the local development application environment.
+	Local = "local"
+	// Staging identifies the pre-production application environment.
+	Staging = "staging"
+	// Production identifies the production application environment.
 	Production = "production"
 )
 
@@ -33,22 +36,24 @@ const (
 //	env.Dump(env.IsAppEnvTesting())
 //	// #bool false (outside of test binaries)
 func IsAppEnvTesting() bool {
-	return os.Getenv("APP_ENV") == Testing ||
+	return isAppEnvTestingValue(os.Getenv("APP_ENV"))
+}
+
+// isAppEnvTestingValue reports test mode while allowing the loader to evaluate a planned APP_ENV.
+func isAppEnvTestingValue(appEnv string) bool {
+	return appEnv == Testing ||
 		flag.Lookup("test.v") != nil ||
 		isTestSuffixFromArguments()
 }
 
-// isTestSuffixFromArguments checks if the test suffix is present in the command line arguments
+// isTestSuffixFromArguments reports whether command-line arguments carry a Go test marker.
 func isTestSuffixFromArguments() bool {
-	anyArgumentContainsTestSuffix := false
-
 	for _, arg := range os.Args {
 		if strings.HasSuffix(arg, ".test") || strings.HasSuffix(arg, "-test.run") {
-			anyArgumentContainsTestSuffix = true
+			return true
 		}
 	}
-
-	return anyArgumentContainsTestSuffix
+	return false
 }
 
 // GetAppEnv returns the current APP_ENV (empty string if unset).
@@ -224,6 +229,7 @@ func SetAppEnvTesting() error {
 	return SetAppEnv(Testing)
 }
 
+// isValidAppEnv reports whether appEnv is one of the supported application environments.
 func isValidAppEnv(appEnv string) bool {
 	switch appEnv {
 	case Testing, Local, Staging, Production:

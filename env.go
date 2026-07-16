@@ -1,6 +1,7 @@
 package env
 
 import (
+	"math/bits"
 	"os"
 	"strconv"
 	"strings"
@@ -118,12 +119,12 @@ func GetInt64(key, fallback string) int64 {
 func GetUint(key, fallback string) uint {
 	val := os.Getenv(key)
 	if val != "" {
-		if i, err := strconv.ParseUint(val, 10, 32); err == nil {
+		if i, err := strconv.ParseUint(val, 10, bits.UintSize); err == nil {
 			return uint(i)
 		}
 	}
 	if fallback != "" {
-		if i, err := strconv.ParseUint(fallback, 10, 32); err == nil {
+		if i, err := strconv.ParseUint(fallback, 10, bits.UintSize); err == nil {
 			return uint(i)
 		}
 	}
@@ -198,7 +199,8 @@ func GetFloat(key, fallback string) float64 {
 // @group Typed getters
 // @behavior readonly
 //
-// Accepted values: true/false, 1/0, t/f (case-insensitive). Invalid entries fall back.
+// Accepted values match strconv.ParseBool: 1, t, T, TRUE, true, True and their false forms.
+// Invalid entries fall back.
 //
 // Example: numeric truthy
 //
@@ -293,7 +295,7 @@ func GetSlice(key, fallback string) []string {
 	return parts
 }
 
-// GetMap parses key=value pairs separated by commas into a map.
+// GetMap parses trimmed key=value pairs separated by commas into a map.
 // @group Typed getters
 // @behavior readonly
 //
@@ -315,7 +317,11 @@ func GetSlice(key, fallback string) []string {
 //	env.Dump(limits)
 //	// #map[string]string []
 func GetMap(key, fallback string) map[string]string {
-	val := Get(key, fallback)
+	return parseStringMap(Get(key, fallback))
+}
+
+// parseStringMap applies GetMap's permissive format without consulting process state.
+func parseStringMap(val string) map[string]string {
 	m := map[string]string{}
 
 	if strings.TrimSpace(val) == "" {
@@ -326,7 +332,11 @@ func GetMap(key, fallback string) map[string]string {
 	for _, p := range pairs {
 		kv := strings.SplitN(strings.TrimSpace(p), "=", 2)
 		if len(kv) == 2 {
-			m[kv[0]] = kv[1]
+			name := strings.TrimSpace(kv[0])
+			if name == "" {
+				continue
+			}
+			m[name] = strings.TrimSpace(kv[1])
 		}
 	}
 
@@ -398,11 +408,11 @@ func GetMapInt(key, fallback string, defaultValue int) map[string]int {
 	return m
 }
 
-// GetEnum ensures the environment variable's value is in the allowed list.
+// GetEnum returns the environment value when allowed and fallback otherwise.
 // @group Typed getters
 // @behavior readonly
 //
-// Returns fallback when the environment value is not in the allowed slice.
+// The fallback is returned as supplied and does not need to appear in allowed.
 //
 // Example: accept only staged environments
 //
@@ -422,11 +432,6 @@ func GetEnum(key, fallback string, allowed []string) string {
 	for _, a := range allowed {
 		if val == a {
 			return val
-		}
-	}
-	for _, a := range allowed {
-		if fallback == a {
-			return fallback
 		}
 	}
 	return fallback
@@ -455,7 +460,7 @@ func MustGet(key string) string {
 	return val
 }
 
-// MustGetInt panics if the value is missing or not an int.
+// MustGetInt returns a required int or panics when the value is missing or invalid.
 // @group Typed getters
 // @behavior panic
 //
@@ -471,10 +476,15 @@ func MustGet(key string) string {
 //	_ = os.Setenv("PORT", "not-a-number")
 //	_ = env.MustGetInt("PORT") // panics when parsing
 func MustGetInt(key string) int {
-	return GetInt(key, "")
+	value := MustGet(key)
+	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		panic("env variable is not an int: " + key)
+	}
+	return parsed
 }
 
-// MustGetBool panics if missing or invalid.
+// MustGetBool returns a required bool or panics when the value is missing or invalid.
 // @group Typed getters
 // @behavior panic
 //
@@ -490,5 +500,10 @@ func MustGetInt(key string) int {
 //	_ = os.Setenv("FEATURE_ENABLED", "maybe")
 //	_ = env.MustGetBool("FEATURE_ENABLED") // panics when parsing
 func MustGetBool(key string) bool {
-	return GetBool(key, "")
+	value := MustGet(key)
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		panic("env variable is not a bool: " + key)
+	}
+	return parsed
 }

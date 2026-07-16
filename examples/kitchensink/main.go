@@ -45,6 +45,7 @@ type snapshot struct {
 	IsHostEnvironment bool
 }
 
+// main keeps this combined example executable so cross-feature API drift fails during compilation.
 func main() {
 	// Load env files if present
 	if err := env.Load(); err != nil {

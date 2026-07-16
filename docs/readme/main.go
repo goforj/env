@@ -21,6 +21,7 @@ const (
 	apiEnd   = "<!-- api:embed:end -->"
 )
 
+// main renders the reproducible documentation artifacts for this module.
 func main() {
 	if err := run(); err != nil {
 		fmt.Println("Error:", err)
@@ -29,6 +30,7 @@ func main() {
 	fmt.Println("✔ API section updated in README.md")
 }
 
+// run replaces only the marked README API section so hand-written documentation remains untouched.
 func run() error {
 	root, err := findRoot()
 	if err != nil {
@@ -62,8 +64,10 @@ func run() error {
 // ------------------------------------------------------------
 //
 
+// FuncDoc captures the metadata needed to render one documented function.
 type FuncDoc struct {
 	Name        string
+	Receiver    string
 	Group       string
 	Behavior    string
 	Fluent      string
@@ -71,6 +75,7 @@ type FuncDoc struct {
 	Examples    []Example
 }
 
+// Example captures an executable snippet and its source location.
 type Example struct {
 	Label string
 	Code  string
@@ -90,6 +95,7 @@ var (
 	exampleHeader  = regexp.MustCompile(`(?i)^\s*Example:\s*(.*)$`)
 )
 
+// parseFuncs collects exported functions and methods into a receiver-qualified, source-derived model.
 func parseFuncs(root string) ([]*FuncDoc, error) {
 	fset := token.NewFileSet()
 
@@ -130,6 +136,7 @@ func parseFuncs(root string) ([]*FuncDoc, error) {
 
 			fd := &FuncDoc{
 				Name:        fn.Name.Name,
+				Receiver:    receiverName(fn),
 				Group:       extractGroup(fn.Doc),
 				Behavior:    extractBehavior(fn.Doc),
 				Fluent:      extractFluent(fn.Doc),
@@ -137,10 +144,11 @@ func parseFuncs(root string) ([]*FuncDoc, error) {
 				Examples:    extractExamples(fset, fn),
 			}
 
-			if existing, ok := funcs[fd.Name]; ok {
+			key := funcIdentity(fd.Receiver, fd.Name)
+			if existing, ok := funcs[key]; ok {
 				existing.Examples = append(existing.Examples, fd.Examples...)
 			} else {
-				funcs[fd.Name] = fd
+				funcs[key] = fd
 			}
 		}
 	}
@@ -156,6 +164,40 @@ func parseFuncs(root string) ([]*FuncDoc, error) {
 	return out, nil
 }
 
+// receiverName returns the named receiver for methods so root functions cannot overwrite them.
+func receiverName(fn *ast.FuncDecl) string {
+	if fn.Recv == nil || len(fn.Recv.List) == 0 {
+		return ""
+	}
+	receiver := fn.Recv.List[0].Type
+	if pointer, ok := receiver.(*ast.StarExpr); ok {
+		receiver = pointer.X
+	}
+	if identifier, ok := receiver.(*ast.Ident); ok {
+		return identifier.Name
+	}
+	return ""
+}
+
+// funcIdentity creates the stable key used to keep methods and functions distinct.
+func funcIdentity(receiver, name string) string {
+	if receiver == "" {
+		return name
+	}
+	return receiver + "." + name
+}
+
+// funcDisplayName qualifies methods for unambiguous API links and headings.
+func funcDisplayName(fn *FuncDoc) string {
+	return funcIdentity(fn.Receiver, fn.Name)
+}
+
+// funcAnchor converts a display name into a stable Markdown anchor.
+func funcAnchor(fn *FuncDoc) string {
+	return strings.NewReplacer(".", "-", "_", "-").Replace(strings.ToLower(funcDisplayName(fn)))
+}
+
+// extractGroup honors the documentation grouping convention and places untagged APIs in Other.
 func extractGroup(group *ast.CommentGroup) string {
 	for _, c := range group.List {
 		line := strings.TrimSpace(strings.TrimPrefix(c.Text, "//"))
@@ -166,6 +208,7 @@ func extractGroup(group *ast.CommentGroup) string {
 	return "Other"
 }
 
+// extractBehavior normalizes behavior metadata used to classify generated API documentation.
 func extractBehavior(group *ast.CommentGroup) string {
 	for _, c := range group.List {
 		line := strings.TrimSpace(strings.TrimPrefix(c.Text, "//"))
@@ -176,6 +219,7 @@ func extractBehavior(group *ast.CommentGroup) string {
 	return ""
 }
 
+// extractFluent normalizes the fluent marker used to annotate chainable APIs.
 func extractFluent(group *ast.CommentGroup) string {
 	for _, c := range group.List {
 		line := strings.TrimSpace(strings.TrimPrefix(c.Text, "//"))
@@ -186,6 +230,7 @@ func extractFluent(group *ast.CommentGroup) string {
 	return ""
 }
 
+// extractDescription stops before generator directives and examples so prose is not duplicated.
 func extractDescription(group *ast.CommentGroup) string {
 	var lines []string
 
@@ -209,6 +254,7 @@ func extractDescription(group *ast.CommentGroup) string {
 	return strings.TrimSpace(strings.Join(lines, "\n"))
 }
 
+// extractExamples retains source positions so documented cases render in declaration order.
 func extractExamples(fset *token.FileSet, fn *ast.FuncDecl) []Example {
 	var out []Example
 	var current []string
@@ -306,6 +352,7 @@ func selectPackage(pkgs map[string]*ast.Package) (string, error) {
 // ------------------------------------------------------------
 //
 
+// renderAPI groups and sorts the parsed model so README generation is reproducible.
 func renderAPI(funcs []*FuncDoc) string {
 	byGroup := map[string][]*FuncDoc{}
 
@@ -328,12 +375,12 @@ func renderAPI(funcs []*FuncDoc) string {
 
 	for _, group := range groupNames {
 		sort.Slice(byGroup[group], func(i, j int) bool {
-			return byGroup[group][i].Name < byGroup[group][j].Name
+			return funcDisplayName(byGroup[group][i]) < funcDisplayName(byGroup[group][j])
 		})
 
 		var links []string
 		for _, fn := range byGroup[group] {
-			links = append(links, fmt.Sprintf("[%s](#%s)", fn.Name, strings.ToLower(fn.Name)))
+			links = append(links, fmt.Sprintf("[%s](#%s)", funcDisplayName(fn), funcAnchor(fn)))
 		}
 
 		buf.WriteString(fmt.Sprintf("| **%s** | %s |\n",
@@ -349,9 +396,9 @@ func renderAPI(funcs []*FuncDoc) string {
 		buf.WriteString("## " + group + "\n\n")
 
 		for _, fn := range byGroup[group] {
-			anchor := strings.ToLower(fn.Name)
+			anchor := funcAnchor(fn)
 
-			header := fn.Name
+			header := funcDisplayName(fn)
 			if fn.Fluent == "true" {
 				header += " · fluent"
 			}
@@ -383,6 +430,7 @@ func renderAPI(funcs []*FuncDoc) string {
 // ------------------------------------------------------------
 //
 
+// replaceAPISection confines generated writes to the API markers and rejects malformed README structure.
 func replaceAPISection(readme, api string) (string, error) {
 	start := strings.Index(readme, apiStart)
 	end := strings.Index(readme, apiEnd)
@@ -407,8 +455,12 @@ func replaceAPISection(readme, api string) (string, error) {
 // ------------------------------------------------------------
 //
 
+// findRoot anchors generation to the root module from either the root or docs directory.
 func findRoot() (string, error) {
-	wd, _ := os.Getwd()
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("get working directory: %w", err)
+	}
 	if fileExists(filepath.Join(wd, "go.mod")) {
 		return wd, nil
 	}
@@ -419,11 +471,13 @@ func findRoot() (string, error) {
 	return "", fmt.Errorf("could not find project root")
 }
 
+// fileExists lets root discovery ignore candidate paths that are not present.
 func fileExists(p string) bool {
 	_, err := os.Stat(p)
 	return err == nil
 }
 
+// normalizeIndent removes shared documentation padding without changing relative code indentation.
 func normalizeIndent(lines []string) []string {
 	min := -1
 

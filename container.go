@@ -1,8 +1,6 @@
 package env
 
-import (
-	"os"
-)
+import "os"
 
 var (
 	// These are shims that tests override.
@@ -12,10 +10,10 @@ var (
 )
 
 const (
-	// files
-	fileDockerSock = "/var/run/docker.sock"
-	fileDockerEnv  = "/.dockerenv"
-	fileCgroup     = "/proc/1/cgroup"
+	fileDockerSock   = "/var/run/docker.sock"
+	fileDockerEnv    = "/.dockerenv"
+	fileContainerEnv = "/run/.containerenv"
+	fileCgroup       = "/proc/1/cgroup"
 
 	// cgroup names
 	cgroupContainer      = "container"
@@ -37,12 +35,10 @@ const (
 //	env.Dump(env.IsDocker())
 //	// #bool false (unless inside Docker)
 func IsDocker() bool {
-	// Check /.dockerenv
 	if _, err := statFile(fileDockerEnv); err == nil {
 		return true
 	}
 
-	// Check cgroup
 	cgroup, err := readFile(fileCgroup)
 	if err == nil && containsAny(cgroup, cgroupNameDocker, cgroupNameContainerd, cgroupNamePodman) {
 		return true
@@ -63,12 +59,10 @@ func IsDocker() bool {
 //	// #bool true  (inside DinD containers)
 //	// #bool false (on hosts or non-DinD containers)
 func IsDockerInDocker() bool {
-	// If /.dockerenv does not exist → not a Docker *container* at all.
 	if _, err := statFile(fileDockerEnv); err != nil {
 		return false
 	}
 
-	// If docker.sock exists → this IS an inner DinD container.
 	if _, err := statFile(fileDockerSock); err == nil {
 		return true
 	}
@@ -97,8 +91,15 @@ func IsDockerHost() bool {
 		return false
 	}
 
-	// Docker host should *not* have container-scoped cgroups
-	if !containsAny(cgroup, cgroupNameDocker, cgroupNameKube, cgroupNameContainerd) {
+	// Host-like cgroups distinguish an exposed daemon from an ordinary container socket mount.
+	if !containsAny(cgroup,
+		cgroupContainer,
+		cgroupNameDocker,
+		cgroupNameKube,
+		cgroupNameContainerd,
+		cgroupNamePodman,
+		cgroupNameLibpod,
+	) {
 		return true
 	}
 
@@ -115,7 +116,15 @@ func IsDockerHost() bool {
 //	// #bool true  (inside most containers)
 //	// #bool false (on bare-metal/VM hosts)
 func IsContainer() bool {
+	return isContainerWithEnv(getEnv)
+}
+
+// isContainerWithEnv detects containers while allowing callers to supply a coherent env view.
+func isContainerWithEnv(getenv func(string) string) bool {
 	if IsDocker() {
+		return true
+	}
+	if _, err := statFile(fileContainerEnv); err == nil {
 		return true
 	}
 
@@ -129,7 +138,7 @@ func IsContainer() bool {
 		return true
 	}
 
-	if getEnv("KUBERNETES_SERVICE_HOST") != "" {
+	if getenv("KUBERNETES_SERVICE_HOST") != "" {
 		return true
 	}
 
@@ -148,7 +157,12 @@ func IsContainer() bool {
 //	// #bool true  (inside Kubernetes pods)
 //	// #bool false (elsewhere)
 func IsKubernetes() bool {
-	if getEnv("KUBERNETES_SERVICE_HOST") != "" {
+	return isKubernetesWithEnv(getEnv)
+}
+
+// isKubernetesWithEnv detects Kubernetes while allowing planned loader values to be evaluated.
+func isKubernetesWithEnv(getenv func(string) string) bool {
+	if getenv("KUBERNETES_SERVICE_HOST") != "" {
 		return true
 	}
 

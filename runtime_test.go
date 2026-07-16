@@ -2,12 +2,13 @@ package env
 
 import "testing"
 
-// Reset the shims after each test.
+// resetRuntime restores runtime shims so tests remain isolated.
 func resetRuntime() {
 	goos = "linux"
 	goarch = "amd64"
 }
 
+// TestOSAndArch ensures runtime identity helpers expose the active platform values.
 func TestOSAndArch(t *testing.T) {
 	defer resetRuntime()
 
@@ -23,6 +24,7 @@ func TestOSAndArch(t *testing.T) {
 	}
 }
 
+// TestIsLinux ensures Linux detection does not overlap unrelated operating systems.
 func TestIsLinux(t *testing.T) {
 	defer resetRuntime()
 
@@ -38,6 +40,7 @@ func TestIsLinux(t *testing.T) {
 	}
 }
 
+// TestIsMac ensures Darwin detection does not overlap unrelated operating systems.
 func TestIsMac(t *testing.T) {
 	defer resetRuntime()
 
@@ -53,6 +56,7 @@ func TestIsMac(t *testing.T) {
 	}
 }
 
+// TestIsWindows ensures Windows detection does not overlap unrelated operating systems.
 func TestIsWindows(t *testing.T) {
 	defer resetRuntime()
 
@@ -68,6 +72,7 @@ func TestIsWindows(t *testing.T) {
 	}
 }
 
+// TestIsBSD ensures every supported BSD runtime is recognized.
 func TestIsBSD(t *testing.T) {
 	defer resetRuntime()
 
@@ -86,6 +91,7 @@ func TestIsBSD(t *testing.T) {
 	}
 }
 
+// TestIsBSD_False ensures non-BSD Unix systems are not misclassified.
 func TestIsBSD_False(t *testing.T) {
 	defer resetRuntime()
 
@@ -95,6 +101,7 @@ func TestIsBSD_False(t *testing.T) {
 	}
 }
 
+// TestIsUnix ensures the documented Unix family is recognized without including Windows.
 func TestIsUnix(t *testing.T) {
 	defer resetRuntime()
 
@@ -119,6 +126,7 @@ func TestIsUnix(t *testing.T) {
 	}
 }
 
+// TestIsContainerOS ensures container-oriented runtime identifiers remain distinguishable from host kernels.
 func TestIsContainerOS(t *testing.T) {
 	defer resetRuntime()
 
