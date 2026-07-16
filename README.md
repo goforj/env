@@ -157,7 +157,7 @@ Discovery and parsing finish before any process mutation. `Load` returns filesys
 
 When no file owns `APP_ENV`, a caller-provided value selects the application layer; otherwise `APP_ENV` defaults to `local`. A file-owned `APP_ENV` is refreshed before layer selection on reload.
 
-### v2.4 behavior notes
+### v2.5 behavior notes
 
 The public v2 call shapes are unchanged. The quality pass makes previously implicit failure and reload behavior explicit:
 
