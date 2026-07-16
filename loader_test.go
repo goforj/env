@@ -321,6 +321,22 @@ func TestReloadRefreshesFileOwnedAppEnv(t *testing.T) {
 
 // TestLoadReturnsDiscoveryAndParseErrorsWithoutMutation ensures failed discovery or parsing cannot partially change process state.
 func TestLoadReturnsDiscoveryAndParseErrorsWithoutMutation(t *testing.T) {
+	t.Run("working directory error", func(t *testing.T) {
+		prepareLoaderTest(t, "ENV_QPASS_UNCHANGED")
+		t.Setenv("ENV_QPASS_UNCHANGED", "ambient")
+		workingDirectoryErr := errors.New("injected working directory failure")
+		envFileGetwd = func() (string, error) {
+			return "", workingDirectoryErr
+		}
+
+		if err := Load(); !errors.Is(err, workingDirectoryErr) {
+			t.Fatalf("expected working directory error, got %v", err)
+		}
+		if os.Getenv("ENV_QPASS_UNCHANGED") != "ambient" || IsEnvLoaded() {
+			t.Fatal("expected failed working directory lookup to leave environment and state unchanged")
+		}
+	})
+
 	t.Run("stat error", func(t *testing.T) {
 		prepareLoaderTest(t, "ENV_QPASS_UNCHANGED")
 		t.Setenv("APP_ENV", Local)
@@ -339,6 +355,84 @@ func TestLoadReturnsDiscoveryAndParseErrorsWithoutMutation(t *testing.T) {
 		}
 		if os.Getenv("ENV_QPASS_UNCHANGED") != "ambient" || IsEnvLoaded() {
 			t.Fatal("expected failed discovery to leave environment and state unchanged")
+		}
+	})
+
+	t.Run("application layer stat error", func(t *testing.T) {
+		prepareLoaderTest(t, "ENV_QPASS_UNCHANGED")
+		t.Setenv("APP_ENV", Local)
+		t.Setenv("ENV_QPASS_UNCHANGED", "ambient")
+		directory := t.TempDir()
+		changeWorkingDirectory(t, directory)
+		applicationLayerErr := errors.New("injected application layer failure")
+		envFileStat = func(path string) (os.FileInfo, error) {
+			if filepath.Base(path) == envFileLocal {
+				return nil, applicationLayerErr
+			}
+			return nil, os.ErrNotExist
+		}
+
+		if err := Load(); !errors.Is(err, applicationLayerErr) {
+			t.Fatalf("expected application layer error, got %v", err)
+		}
+		if os.Getenv("ENV_QPASS_UNCHANGED") != "ambient" || IsEnvLoaded() {
+			t.Fatal("expected failed application layer lookup to leave environment and state unchanged")
+		}
+	})
+
+	t.Run("host layer stat error", func(t *testing.T) {
+		prepareLoaderTest(t, "ENV_QPASS_UNCHANGED")
+		t.Setenv("APP_ENV", Local)
+		t.Setenv("ENV_QPASS_UNCHANGED", "ambient")
+		directory := t.TempDir()
+		changeWorkingDirectory(t, directory)
+		hostLayerErr := errors.New("injected host layer failure")
+		envFileStat = func(path string) (os.FileInfo, error) {
+			if filepath.Base(path) == fileEnvHost {
+				return nil, hostLayerErr
+			}
+			return nil, os.ErrNotExist
+		}
+		statFile = func(string) (os.FileInfo, error) {
+			return nil, os.ErrNotExist
+		}
+		readFile = func(string) ([]byte, error) {
+			return nil, os.ErrNotExist
+		}
+
+		if err := Load(); !errors.Is(err, hostLayerErr) {
+			t.Fatalf("expected host layer error, got %v", err)
+		}
+		if os.Getenv("ENV_QPASS_UNCHANGED") != "ambient" || IsEnvLoaded() {
+			t.Fatal("expected failed host layer lookup to leave environment and state unchanged")
+		}
+	})
+
+	t.Run("testing layer stat error", func(t *testing.T) {
+		prepareLoaderTest(t, "ENV_QPASS_UNCHANGED")
+		t.Setenv("APP_ENV", Local)
+		t.Setenv("ENV_QPASS_UNCHANGED", "ambient")
+		directory := t.TempDir()
+		changeWorkingDirectory(t, directory)
+		testingLayerErr := errors.New("injected testing layer failure")
+		envFileStat = func(path string) (os.FileInfo, error) {
+			if filepath.Base(path) == envFileTesting {
+				return nil, testingLayerErr
+			}
+			return nil, os.ErrNotExist
+		}
+		statFile = func(path string) (os.FileInfo, error) {
+			if path == fileDockerEnv {
+				return nil, nil
+			}
+			return nil, os.ErrNotExist
+		}
+
+		if err := Load(); !errors.Is(err, testingLayerErr) {
+			t.Fatalf("expected testing layer error, got %v", err)
+		}
+		if os.Getenv("ENV_QPASS_UNCHANGED") != "ambient" || IsEnvLoaded() {
+			t.Fatal("expected failed testing layer lookup to leave environment and state unchanged")
 		}
 	})
 
@@ -396,6 +490,39 @@ func TestLoadRollsBackApplicationFailure(t *testing.T) {
 	}
 	if os.Getenv("ENV_QPASS_A") != "ambient-a" || os.Getenv("ENV_QPASS_B") != "ambient-b" {
 		t.Fatal("expected failed Load to roll back all affected keys")
+	}
+	if IsEnvLoaded() {
+		t.Fatal("expected failed Load to leave state unpublished")
+	}
+}
+
+// TestLoadJoinsApplicationAndRollbackFailures ensures callers retain both causes when recovery also fails.
+func TestLoadJoinsApplicationAndRollbackFailures(t *testing.T) {
+	prepareLoaderTest(t, "ENV_QPASS_A", "ENV_QPASS_B")
+	t.Setenv("APP_ENV", Local)
+	t.Setenv("ENV_QPASS_A", "ambient-a")
+	t.Setenv("ENV_QPASS_B", "ambient-b")
+	directory := t.TempDir()
+	writeEnvFile(t, directory, fileEnv, "ENV_QPASS_A=file-a\nENV_QPASS_B=file-b\n")
+	changeWorkingDirectory(t, directory)
+
+	applyErr := errors.New("injected apply failure")
+	rollbackErr := errors.New("injected rollback failure")
+	envSet = func(key, value string) error {
+		if key == "ENV_QPASS_B" {
+			switch value {
+			case "file-b":
+				return applyErr
+			case "ambient-b":
+				return rollbackErr
+			}
+		}
+		return os.Setenv(key, value)
+	}
+
+	err := Load()
+	if !errors.Is(err, applyErr) || !errors.Is(err, rollbackErr) {
+		t.Fatalf("expected joined apply and rollback errors, got %v", err)
 	}
 	if IsEnvLoaded() {
 		t.Fatal("expected failed Load to leave state unpublished")
@@ -608,6 +735,14 @@ func TestEnvironmentPlanKeysAreDeterministic(t *testing.T) {
 	plan := environmentLoadPlan{fileValues: map[string]string{"C": ""}, defaults: map[string]string{"D": ""}}
 	if got, want := environmentPlanKeys(previous, plan), []string{"A", "B", "C", "D"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("expected keys %v, got %v", want, got)
+	}
+}
+
+// TestEnvironmentPlanTargetReturnsAbsentForUnownedKey guards the helper's safe fallback for direct callers.
+func TestEnvironmentPlanTargetReturnsAbsentForUnownedKey(t *testing.T) {
+	plan := environmentLoadPlan{fileValues: map[string]string{}, defaults: map[string]string{}}
+	if got := environmentPlanTarget("UNOWNED", nil, plan); got.present || got.value != "" {
+		t.Fatalf("expected absent snapshot, got %+v", got)
 	}
 }
 

@@ -146,10 +146,6 @@ func load(force bool) error {
 	if err != nil {
 		return fmt.Errorf("get working directory for env loading: %w", err)
 	}
-	workingDirectory, err = filepath.Abs(workingDirectory)
-	if err != nil {
-		return fmt.Errorf("resolve working directory for env loading: %w", err)
-	}
 
 	previous := cloneLoadedEnvironmentValues(processEnvironmentLoader.values)
 	baseline := cloneEnvironmentSnapshots(processEnvironmentLoader.baseline)
@@ -407,10 +403,7 @@ func cloneLoadedEnvironmentValues(values map[string]loadedEnvironmentValue) map[
 func snapshotProcessEnvironment() map[string]environmentSnapshot {
 	snapshots := make(map[string]environmentSnapshot)
 	for _, entry := range os.Environ() {
-		key, value, found := strings.Cut(entry, "=")
-		if !found {
-			continue
-		}
+		key, value, _ := strings.Cut(entry, "=")
 		snapshots[key] = environmentSnapshot{value: value, present: true}
 	}
 	return snapshots
