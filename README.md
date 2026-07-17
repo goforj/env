@@ -13,7 +13,6 @@
     <a href="https://go.dev"><img src="https://img.shields.io/badge/go-1.24.4+-blue?logo=go" alt="Go version"></a>
     <img src="https://img.shields.io/github/v/tag/goforj/env?label=version&sort=semver" alt="Latest tag">
     <a href="https://codecov.io/gh/goforj/env" ><img src="https://codecov.io/github/goforj/env/graph/badge.svg?token=M7EFUVV1XW"/></a>
-    <a href="https://goreportcard.com/report/github.com/goforj/env/v2"><img src="https://goreportcard.com/badge/github.com/goforj/env/v2" alt="Go Report Card"></a>
 </p>
 
 # Features
