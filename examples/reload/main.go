@@ -16,9 +16,11 @@ import (
 func main() {
 	// Reload re-discovers and transactionally reapplies env files even after Load has run.
 	//
-	// Keys loaded from files remain file-owned: Reload replaces runtime edits to those keys. When a
-	// key disappears from all files, Reload restores the ambient value (including unset versus empty)
-	// that existed before the first successful Load. Unrelated process variables are never changed.
+	// Keys loaded from files remain file-owned until application code changes their visible value.
+	// Reload refreshes unchanged file-owned keys while preserving process overrides. An unset key is
+	// missing and may be supplied by a file again. When a key disappears from all files, Reload
+	// restores the process value (including unset versus empty) that existed before the first
+	// successful Load. Unrelated process variables are never changed.
 
 	// Example: refresh changed env files
 	tmp, _ := os.MkdirTemp("", "envdoc")

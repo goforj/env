@@ -40,9 +40,10 @@ type environmentSnapshot struct {
 	present bool
 }
 
-// loadedEnvironmentValue records the key's ambient value before the first successful load.
+// loadedEnvironmentValue distinguishes an unchanged file value from a later process override.
 type loadedEnvironmentValue struct {
 	original environmentSnapshot
+	applied  environmentSnapshot
 }
 
 // environmentLoaderState serializes loading and protects ownership metadata and the ambient baseline.
@@ -74,9 +75,10 @@ type environmentLoadPlan struct {
 
 // Load loads the nearest env files with deterministic layering.
 //
-// Load applies once per process. Files override ambient values, and later files override earlier
-// files. Discovery and parsing complete before the process environment changes; errors leave both
-// the environment and loader state unchanged. Use Reload to re-read files.
+// Load applies once per process. Existing process values override files, and later files override
+// earlier files for keys absent from the process environment. Discovery and parsing complete
+// before the process environment changes; errors leave both the environment and loader state
+// unchanged. Use Reload to re-read files.
 //
 // @group Environment loading
 // @behavior mutates-process-env
@@ -109,9 +111,11 @@ func Load() error {
 
 // Reload re-discovers and transactionally reapplies env files even after Load has run.
 //
-// Keys loaded from files remain file-owned: Reload replaces runtime edits to those keys. When a
-// key disappears from all files, Reload restores the ambient value (including unset versus empty)
-// that existed before the first successful Load. Unrelated process variables are never changed.
+// Keys loaded from files remain file-owned until application code changes their visible value.
+// Reload refreshes unchanged file-owned keys while preserving process overrides. An unset key is
+// missing and may be supplied by a file again. When a key disappears from all files, Reload
+// restores the process value (including unset versus empty) that existed before the first
+// successful Load. Unrelated process variables are never changed.
 //
 // @group Environment loading
 // @behavior mutates-process-env
@@ -147,7 +151,7 @@ func load(force bool) error {
 		return fmt.Errorf("get working directory for env loading: %w", err)
 	}
 
-	previous := cloneLoadedEnvironmentValues(processEnvironmentLoader.values)
+	previous := unchangedLoadedEnvironmentValues(processEnvironmentLoader.values)
 	baseline := cloneEnvironmentSnapshots(processEnvironmentLoader.baseline)
 	if !processEnvironmentLoader.loaded {
 		baseline = snapshotProcessEnvironment()
@@ -189,7 +193,7 @@ func buildEnvironmentLoadPlan(startDirectory string, previous map[string]loadedE
 		return environmentLoadPlan{}, err
 	}
 	if found {
-		mergeEnvironmentFile(&plan, base)
+		mergeEnvironmentFile(&plan, base, previous)
 		if value, ok := plan.fileValues["APP_ENV"]; ok {
 			appEnv = value
 		}
@@ -201,7 +205,7 @@ func buildEnvironmentLoadPlan(startDirectory string, previous map[string]loadedE
 			return environmentLoadPlan{}, err
 		}
 		if found {
-			mergeEnvironmentFile(&plan, layer)
+			mergeEnvironmentFile(&plan, layer, previous)
 		}
 	}
 
@@ -214,7 +218,7 @@ func buildEnvironmentLoadPlan(startDirectory string, previous map[string]loadedE
 			return environmentLoadPlan{}, err
 		}
 		if found {
-			mergeEnvironmentFile(&plan, host)
+			mergeEnvironmentFile(&plan, host, previous)
 		}
 	}
 
@@ -228,13 +232,13 @@ func buildEnvironmentLoadPlan(startDirectory string, previous map[string]loadedE
 			return environmentLoadPlan{}, err
 		}
 		if found {
-			mergeEnvironmentFile(&plan, testing)
+			mergeEnvironmentFile(&plan, testing, previous)
 		}
 	}
 
 	if _, fileOwnsAppEnv := plan.fileValues["APP_ENV"]; !fileOwnsAppEnv {
 		ambient := originalEnvironmentSnapshot("APP_ENV", previous)
-		if !ambient.present || ambient.value == "" {
+		if !ambient.present {
 			plan.defaults["APP_ENV"] = Local
 		}
 	}
@@ -242,10 +246,19 @@ func buildEnvironmentLoadPlan(startDirectory string, previous map[string]loadedE
 	return plan, nil
 }
 
-// mergeEnvironmentFile applies one already parsed file to the in-memory layer map.
-func mergeEnvironmentFile(plan *environmentLoadPlan, file environmentFile) {
+// mergeEnvironmentFile keeps existing process values authoritative while preserving file layering.
+func mergeEnvironmentFile(
+	plan *environmentLoadPlan,
+	file environmentFile,
+	previous map[string]loadedEnvironmentValue,
+) {
 	plan.files = append(plan.files, file.path)
 	for key, value := range file.values {
+		if _, fileOwned := previous[key]; !fileOwned {
+			if _, processOwned := envLookup(key); processOwned {
+				continue
+			}
+		}
 		plan.fileValues[key] = value
 	}
 }
@@ -318,12 +331,17 @@ func applyEnvironmentLoadPlan(previous map[string]loadedEnvironmentValue, baseli
 	}
 
 	next := make(map[string]loadedEnvironmentValue, len(plan.fileValues))
-	for key := range plan.fileValues {
+	for key, value := range plan.fileValues {
+		applied := environmentSnapshot{value: value, present: true}
 		if loaded, ok := previous[key]; ok {
+			loaded.applied = applied
 			next[key] = loaded
 			continue
 		}
-		next[key] = loadedEnvironmentValue{original: baseline[key]}
+		next[key] = loadedEnvironmentValue{
+			original: baseline[key],
+			applied:  applied,
+		}
 	}
 	return next, nil
 }
@@ -397,6 +415,21 @@ func cloneLoadedEnvironmentValues(values map[string]loadedEnvironmentValue) map[
 		clone[key] = value
 	}
 	return clone
+}
+
+// unchangedLoadedEnvironmentValues releases keys that application code has taken over since loading.
+func unchangedLoadedEnvironmentValues(
+	values map[string]loadedEnvironmentValue,
+) map[string]loadedEnvironmentValue {
+	unchanged := make(map[string]loadedEnvironmentValue, len(values))
+	for key, loaded := range values {
+		value, present := envLookup(key)
+		current := environmentSnapshot{value: value, present: present}
+		if snapshotsEqual(current, loaded.applied) {
+			unchanged[key] = loaded
+		}
+	}
+	return unchanged
 }
 
 // snapshotProcessEnvironment records the exact ambient baseline before the first successful load.

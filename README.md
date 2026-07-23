@@ -146,15 +146,19 @@ See [examples/kitchensink/main.go](examples/kitchensink/main.go) for a runnable 
 - `.env.host` when running on the host or DinD
 - `.env.testing` when `APP_ENV=testing` or the process has Go test markers
 
-Each filename is discovered independently, starting in the working directory and checking at most nine ancestors. The nearest regular file wins; regular-file symlinks are followed. Later layers override earlier ones, and files override ambient process values.
+Each filename is discovered independently, starting in the working directory and checking at most nine ancestors. The nearest regular file wins; regular-file symlinks are followed. Later files override earlier files, while existing process variables override every file. An explicitly empty process variable still counts as existing.
 
 Discovery and parsing finish before any process mutation. `Load` returns filesystem and parse errors instead of panicking, rolls back a failed environment update, and becomes a no-op after its first success. A failed call leaves `IsEnvLoaded` false and preserves the prior process environment.
 
 `Load`, `Reload`, and `IsEnvLoaded` synchronize with one another. Direct `os.Setenv` or `os.Unsetenv` calls are outside that lock, so applications that mutate the same keys concurrently must coordinate those writes themselves.
 
-`Reload` always rediscovers the selected files. Keys previously loaded from files remain file-owned, so runtime edits to those keys are replaced. If a key disappears from every file, its exact pre-load ambient state is restored, including the difference between unset and explicitly empty. Unrelated variables are untouched. A failed reload preserves the last successful configuration.
+`Reload` always rediscovers the selected files. An unchanged value previously supplied by a file remains file-owned and refreshes from disk. If application code changes its visible value, the process takes ownership and `Reload` leaves it alone. An unset key is missing again and may be supplied by a file on the next reload; set it to an explicitly empty value when that empty process value must remain authoritative. Any other process value present when `Reload` discovers a new file key also remains authoritative. If an unchanged file-owned key disappears from every file, its exact pre-load process state is restored, including the difference between unset and explicitly empty. Unrelated variables are untouched. A failed reload preserves the last successful configuration.
 
-When no file owns `APP_ENV`, a caller-provided value selects the application layer; otherwise `APP_ENV` defaults to `local`. A file-owned `APP_ENV` is refreshed before layer selection on reload.
+An existing process `APP_ENV` selects the application layer and cannot be replaced by a file. An explicitly empty process `APP_ENV` selects local files while remaining empty. When the process does not provide `APP_ENV`, `.env` may select the application layer; if neither source provides it, the loader defaults it to `local`. A file-owned `APP_ENV` is refreshed before layer selection on reload.
+
+### v2.6 behavior notes
+
+`Load` and `Reload` now follow the conventional dotenv precedence rule: existing process variables win and dotenv files supply missing values. Applications that intentionally relied on a file replacing an exported process variable should unset that variable before calling `Load`.
 
 ### v2.5 behavior notes
 
@@ -169,6 +173,8 @@ The public v2 call shapes are unchanged. The quality pass makes previously impli
 ## Debug output and secrets
 
 `Dump` intentionally prints the raw values passed to it and performs no redaction. Never pass credentials, tokens, private keys, or other secrets. Loader diagnostics (`ENV_DEBUG=3`) print only selected file paths and `APP_ENV`, never dotenv keys or values.
+
+The process environment is the highest-priority configuration source. Sanitize values inherited from an untrusted launcher before calling `Load`. Child processes normally inherit the resolved environment; construct `exec.Cmd.Env` explicitly when crossing a trust boundary or when a child must load an independent configuration.
 
 ## Container detection
 
@@ -477,9 +483,10 @@ env.Dump(env.IsEnvLoaded())
 
 Load loads the nearest env files with deterministic layering.
 
-Load applies once per process. Files override ambient values, and later files override earlier
-files. Discovery and parsing complete before the process environment changes; errors leave both
-the environment and loader state unchanged. Use Reload to re-read files.
+Load applies once per process. Existing process values override files, and later files override
+earlier files for keys absent from the process environment. Discovery and parsing complete
+before the process environment changes; errors leave both the environment and loader state
+unchanged. Use Reload to re-read files.
 
 _Example: test-specific env file_
 
@@ -509,9 +516,11 @@ _ = env.LoadEnvFileIfExists()
 
 Reload re-discovers and transactionally reapplies env files even after Load has run.
 
-Keys loaded from files remain file-owned: Reload replaces runtime edits to those keys. When a
-key disappears from all files, Reload restores the ambient value (including unset versus empty)
-that existed before the first successful Load. Unrelated process variables are never changed.
+Keys loaded from files remain file-owned until application code changes their visible value.
+Reload refreshes unchanged file-owned keys while preserving process overrides. An unset key is
+missing and may be supplied by a file again. When a key disappears from all files, Reload
+restores the process value (including unset versus empty) that existed before the first
+successful Load. Unrelated process variables are never changed.
 
 _Example: refresh changed env files_
 

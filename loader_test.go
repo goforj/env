@@ -94,13 +94,35 @@ func writeEnvFile(t *testing.T, directory, name, contents string) {
 
 // TestLoadAppliesLayersInOrder ensures later environment-specific files override earlier base values.
 func TestLoadAppliesLayersInOrder(t *testing.T) {
-	prepareLoaderTest(t, "ENV_QPASS_SHARED", "ENV_QPASS_BASE", "ENV_QPASS_LAYER", "ENV_QPASS_TEST")
+	prepareLoaderTest(
+		t,
+		"ENV_QPASS_SHARED",
+		"ENV_QPASS_BASE",
+		"ENV_QPASS_LAYER",
+		"ENV_QPASS_TEST",
+		"ENV_QPASS_PROCESS",
+	)
 	t.Setenv("APP_ENV", Staging)
-	t.Setenv("ENV_QPASS_SHARED", "ambient")
+	t.Setenv("ENV_QPASS_PROCESS", "process")
 	directory := t.TempDir()
-	writeEnvFile(t, directory, fileEnv, "ENV_QPASS_BASE=base\nENV_QPASS_SHARED=base\n")
-	writeEnvFile(t, directory, envFileStaging, "ENV_QPASS_LAYER=staging\nENV_QPASS_SHARED=staging\n")
-	writeEnvFile(t, directory, envFileTesting, "ENV_QPASS_TEST=test\nENV_QPASS_SHARED=testing\n")
+	writeEnvFile(
+		t,
+		directory,
+		fileEnv,
+		"ENV_QPASS_BASE=base\nENV_QPASS_SHARED=base\nENV_QPASS_PROCESS=base\n",
+	)
+	writeEnvFile(
+		t,
+		directory,
+		envFileStaging,
+		"ENV_QPASS_LAYER=staging\nENV_QPASS_SHARED=staging\nENV_QPASS_PROCESS=staging\n",
+	)
+	writeEnvFile(
+		t,
+		directory,
+		envFileTesting,
+		"ENV_QPASS_TEST=test\nENV_QPASS_SHARED=testing\nENV_QPASS_PROCESS=testing\n",
+	)
 	changeWorkingDirectory(t, directory)
 
 	if err := Load(); err != nil {
@@ -108,10 +130,11 @@ func TestLoadAppliesLayersInOrder(t *testing.T) {
 	}
 
 	want := map[string]string{
-		"ENV_QPASS_BASE":   "base",
-		"ENV_QPASS_LAYER":  "staging",
-		"ENV_QPASS_TEST":   "test",
-		"ENV_QPASS_SHARED": "testing",
+		"ENV_QPASS_BASE":    "base",
+		"ENV_QPASS_LAYER":   "staging",
+		"ENV_QPASS_TEST":    "test",
+		"ENV_QPASS_SHARED":  "testing",
+		"ENV_QPASS_PROCESS": "process",
 	}
 	for key, expected := range want {
 		if got := os.Getenv(key); got != expected {
@@ -126,7 +149,7 @@ func TestLoadAppliesLayersInOrder(t *testing.T) {
 // TestLoadBaseSelectsApplicationLayer ensures APP_ENV selects the matching application-specific file.
 func TestLoadBaseSelectsApplicationLayer(t *testing.T) {
 	prepareLoaderTest(t, "ENV_QPASS_LAYER")
-	t.Setenv("APP_ENV", Local)
+	_ = os.Unsetenv("APP_ENV")
 	directory := t.TempDir()
 	writeEnvFile(t, directory, fileEnv, "APP_ENV=production\n")
 	writeEnvFile(t, directory, envFileProd, "ENV_QPASS_LAYER=production\n")
@@ -137,6 +160,58 @@ func TestLoadBaseSelectsApplicationLayer(t *testing.T) {
 	}
 	if got := os.Getenv("ENV_QPASS_LAYER"); got != Production {
 		t.Fatalf("expected base APP_ENV to select production, got %q", got)
+	}
+}
+
+// TestLoadProcessAppEnvSelectsApplicationLayer ensures inherited APP_ENV cannot be replaced by files.
+func TestLoadProcessAppEnvSelectsApplicationLayer(t *testing.T) {
+	prepareLoaderTest(t, "ENV_QPASS_STAGE", "ENV_QPASS_PROD")
+	t.Setenv("APP_ENV", Staging)
+	directory := t.TempDir()
+	writeEnvFile(t, directory, fileEnv, "APP_ENV=production\n")
+	writeEnvFile(t, directory, envFileStaging, "ENV_QPASS_STAGE=yes\n")
+	writeEnvFile(t, directory, envFileProd, "ENV_QPASS_PROD=yes\n")
+	changeWorkingDirectory(t, directory)
+
+	if err := Load(); err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if got := os.Getenv("APP_ENV"); got != Staging {
+		t.Fatalf("expected inherited APP_ENV=%q, got %q", Staging, got)
+	}
+	if got := os.Getenv("ENV_QPASS_STAGE"); got != "yes" {
+		t.Fatalf("expected inherited APP_ENV to select staging, got %q", got)
+	}
+	if _, present := os.LookupEnv("ENV_QPASS_PROD"); present {
+		t.Fatal("expected production layer to remain unloaded")
+	}
+}
+
+// TestLoadPreservesEmptyProcessValues ensures dotenv files cannot replace explicitly empty values.
+func TestLoadPreservesEmptyProcessValues(t *testing.T) {
+	prepareLoaderTest(t, "ENV_QPASS_EMPTY", "ENV_QPASS_LOCAL", "ENV_QPASS_PROD")
+	t.Setenv("APP_ENV", "")
+	t.Setenv("ENV_QPASS_EMPTY", "")
+	directory := t.TempDir()
+	writeEnvFile(t, directory, fileEnv, "APP_ENV=production\nENV_QPASS_EMPTY=file\n")
+	writeEnvFile(t, directory, envFileLocal, "ENV_QPASS_LOCAL=yes\n")
+	writeEnvFile(t, directory, envFileProd, "ENV_QPASS_PROD=yes\n")
+	changeWorkingDirectory(t, directory)
+
+	if err := Load(); err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if value, present := os.LookupEnv("ENV_QPASS_EMPTY"); !present || value != "" {
+		t.Fatalf("expected inherited empty value, got value=%q present=%v", value, present)
+	}
+	if value, present := os.LookupEnv("APP_ENV"); !present || value != "" {
+		t.Fatalf("expected inherited empty APP_ENV, got value=%q present=%v", value, present)
+	}
+	if got := os.Getenv("ENV_QPASS_LOCAL"); got != "yes" {
+		t.Fatalf("expected empty APP_ENV to select local files, got %q", got)
+	}
+	if _, present := os.LookupEnv("ENV_QPASS_PROD"); present {
+		t.Fatal("expected production layer to remain unloaded")
 	}
 }
 
@@ -163,10 +238,16 @@ func TestLoadSearchesEachLayerIndependently(t *testing.T) {
 
 // TestLoadAppliesHostLayer ensures host-specific values participate at their documented precedence.
 func TestLoadAppliesHostLayer(t *testing.T) {
-	prepareLoaderTest(t, "ENV_QPASS_HOST")
+	prepareLoaderTest(t, "ENV_QPASS_HOST", "ENV_QPASS_HOST_PROCESS")
 	t.Setenv("APP_ENV", Local)
+	t.Setenv("ENV_QPASS_HOST_PROCESS", "process")
 	directory := t.TempDir()
-	writeEnvFile(t, directory, fileEnvHost, "ENV_QPASS_HOST=host\n")
+	writeEnvFile(
+		t,
+		directory,
+		fileEnvHost,
+		"ENV_QPASS_HOST=host\nENV_QPASS_HOST_PROCESS=host\n",
+	)
 	changeWorkingDirectory(t, directory)
 	statFile = func(string) (os.FileInfo, error) { return nil, os.ErrNotExist }
 	readFile = func(string) ([]byte, error) { return []byte("0::/user.slice"), nil }
@@ -176,6 +257,9 @@ func TestLoadAppliesHostLayer(t *testing.T) {
 	}
 	if got := os.Getenv("ENV_QPASS_HOST"); got != "host" {
 		t.Fatalf("expected host layer, got %q", got)
+	}
+	if got := os.Getenv("ENV_QPASS_HOST_PROCESS"); got != "process" {
+		t.Fatalf("expected process value to override host layer, got %q", got)
 	}
 }
 
@@ -223,15 +307,27 @@ func TestLoadIsIdempotent(t *testing.T) {
 	}
 }
 
-// TestReloadReappliesAndRestoresFileOwnedKeys ensures removed file values return to their pre-load baseline.
-func TestReloadReappliesAndRestoresFileOwnedKeys(t *testing.T) {
-	prepareLoaderTest(t, "ENV_QPASS_RELOAD", "ENV_QPASS_RESTORE", "ENV_QPASS_ABSENT", "ENV_QPASS_UNRELATED")
+// TestReloadRefreshesFilesAndPreservesProcessOverrides ensures ownership transfers cleanly.
+func TestReloadRefreshesFilesAndPreservesProcessOverrides(t *testing.T) {
+	prepareLoaderTest(
+		t,
+		"ENV_QPASS_RELOAD",
+		"ENV_QPASS_REFRESH",
+		"ENV_QPASS_RESTORE",
+		"ENV_QPASS_ABSENT",
+		"ENV_QPASS_UNRELATED",
+	)
 	t.Setenv("APP_ENV", Local)
 	t.Setenv("ENV_QPASS_RESTORE", "ambient")
 	_ = os.Unsetenv("ENV_QPASS_ABSENT")
 	t.Setenv("ENV_QPASS_UNRELATED", "before")
 	directory := t.TempDir()
-	writeEnvFile(t, directory, fileEnv, "ENV_QPASS_RELOAD=first\nENV_QPASS_RESTORE=file\nENV_QPASS_ABSENT=file\n")
+	writeEnvFile(
+		t,
+		directory,
+		fileEnv,
+		"ENV_QPASS_RELOAD=first\nENV_QPASS_REFRESH=first\nENV_QPASS_RESTORE=file\nENV_QPASS_ABSENT=file\n",
+	)
 	changeWorkingDirectory(t, directory)
 
 	if err := Load(); err != nil {
@@ -239,16 +335,19 @@ func TestReloadReappliesAndRestoresFileOwnedKeys(t *testing.T) {
 	}
 	t.Setenv("ENV_QPASS_RELOAD", "runtime")
 	t.Setenv("ENV_QPASS_UNRELATED", "after")
-	writeEnvFile(t, directory, fileEnv, "ENV_QPASS_RELOAD=second\n")
+	writeEnvFile(t, directory, fileEnv, "ENV_QPASS_RELOAD=second\nENV_QPASS_REFRESH=second\n")
 	if err := Reload(); err != nil {
 		t.Fatalf("Reload: %v", err)
 	}
 
-	if got := os.Getenv("ENV_QPASS_RELOAD"); got != "second" {
-		t.Fatalf("expected file to replace runtime edit, got %q", got)
+	if got := os.Getenv("ENV_QPASS_RELOAD"); got != "runtime" {
+		t.Fatalf("expected process override to remain authoritative, got %q", got)
+	}
+	if got := os.Getenv("ENV_QPASS_REFRESH"); got != "second" {
+		t.Fatalf("expected unchanged file-owned key to refresh, got %q", got)
 	}
 	if got := os.Getenv("ENV_QPASS_RESTORE"); got != "ambient" {
-		t.Fatalf("expected original ambient restoration, got %q", got)
+		t.Fatalf("expected original process value, got %q", got)
 	}
 	if _, present := os.LookupEnv("ENV_QPASS_ABSENT"); present {
 		t.Fatal("expected originally absent key to become absent again")
@@ -258,7 +357,57 @@ func TestReloadReappliesAndRestoresFileOwnedKeys(t *testing.T) {
 	}
 }
 
-// TestReloadRestoresBaselineForKeysClaimedLater ensures newly managed keys retain their original ambient value.
+// TestReloadRefillsUnsetFileValue ensures an unset key is treated as missing configuration.
+func TestReloadRefillsUnsetFileValue(t *testing.T) {
+	prepareLoaderTest(t, "ENV_QPASS_UNSET")
+	t.Setenv("APP_ENV", Local)
+	_ = os.Unsetenv("ENV_QPASS_UNSET")
+	directory := t.TempDir()
+	writeEnvFile(t, directory, fileEnv, "ENV_QPASS_UNSET=first\n")
+	changeWorkingDirectory(t, directory)
+
+	if err := Load(); err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	_ = os.Unsetenv("ENV_QPASS_UNSET")
+	writeEnvFile(t, directory, fileEnv, "ENV_QPASS_UNSET=second\n")
+	if err := Reload(); err != nil {
+		t.Fatalf("Reload: %v", err)
+	}
+	if got := os.Getenv("ENV_QPASS_UNSET"); got != "second" {
+		t.Fatalf("expected dotenv to refill missing value, got %q", got)
+	}
+}
+
+// TestReloadProcessAppEnvTakesOwnership ensures a runtime application mode selects the next layer.
+func TestReloadProcessAppEnvTakesOwnership(t *testing.T) {
+	prepareLoaderTest(t, "ENV_QPASS_STAGE", "ENV_QPASS_PROD")
+	_ = os.Unsetenv("APP_ENV")
+	directory := t.TempDir()
+	writeEnvFile(t, directory, fileEnv, "APP_ENV=staging\n")
+	writeEnvFile(t, directory, envFileStaging, "ENV_QPASS_STAGE=yes\n")
+	writeEnvFile(t, directory, envFileProd, "ENV_QPASS_PROD=yes\n")
+	changeWorkingDirectory(t, directory)
+
+	if err := Load(); err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	t.Setenv("APP_ENV", Production)
+	if err := Reload(); err != nil {
+		t.Fatalf("Reload: %v", err)
+	}
+	if got := os.Getenv("APP_ENV"); got != Production {
+		t.Fatalf("expected process APP_ENV=%q, got %q", Production, got)
+	}
+	if got := os.Getenv("ENV_QPASS_PROD"); got != "yes" {
+		t.Fatalf("expected process APP_ENV to select production, got %q", got)
+	}
+	if _, present := os.LookupEnv("ENV_QPASS_STAGE"); present {
+		t.Fatal("expected staging-only value to be removed")
+	}
+}
+
+// TestReloadRestoresBaselineForKeysClaimedLater ensures a newly file-owned key returns to its original absence.
 func TestReloadRestoresBaselineForKeysClaimedLater(t *testing.T) {
 	prepareLoaderTest(t, "ENV_QPASS_LATE_CLAIM")
 	t.Setenv("APP_ENV", Local)
@@ -269,10 +418,12 @@ func TestReloadRestoresBaselineForKeysClaimedLater(t *testing.T) {
 	if err := Load(); err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	t.Setenv("ENV_QPASS_LATE_CLAIM", "runtime-after-load")
 	writeEnvFile(t, directory, fileEnv, "ENV_QPASS_LATE_CLAIM=file\n")
 	if err := Reload(); err != nil {
 		t.Fatalf("Reload claiming key: %v", err)
+	}
+	if got := os.Getenv("ENV_QPASS_LATE_CLAIM"); got != "file" {
+		t.Fatalf("expected newly file-owned value, got %q", got)
 	}
 	writeEnvFile(t, directory, fileEnv, "")
 	if err := Reload(); err != nil {
@@ -283,10 +434,60 @@ func TestReloadRestoresBaselineForKeysClaimedLater(t *testing.T) {
 	}
 }
 
+// TestReloadPreservesEmptyProcessValuesAddedAfterLoad ensures empty runtime overrides remain present.
+func TestReloadPreservesEmptyProcessValuesAddedAfterLoad(t *testing.T) {
+	prepareLoaderTest(t, "ENV_QPASS_LATE_EMPTY")
+	t.Setenv("APP_ENV", Local)
+	_ = os.Unsetenv("ENV_QPASS_LATE_EMPTY")
+	directory := t.TempDir()
+	changeWorkingDirectory(t, directory)
+
+	if err := Load(); err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	t.Setenv("ENV_QPASS_LATE_EMPTY", "")
+	writeEnvFile(t, directory, fileEnv, "ENV_QPASS_LATE_EMPTY=file\n")
+	if err := Reload(); err != nil {
+		t.Fatalf("Reload: %v", err)
+	}
+	if value, present := os.LookupEnv("ENV_QPASS_LATE_EMPTY"); !present || value != "" {
+		t.Fatalf("expected empty process value, got value=%q present=%v", value, present)
+	}
+}
+
+// TestReloadPreservesProcessValuesAddedAfterLoad ensures files cannot claim live process configuration.
+func TestReloadPreservesProcessValuesAddedAfterLoad(t *testing.T) {
+	prepareLoaderTest(t, "ENV_QPASS_LATE_PROCESS")
+	t.Setenv("APP_ENV", Local)
+	_ = os.Unsetenv("ENV_QPASS_LATE_PROCESS")
+	directory := t.TempDir()
+	changeWorkingDirectory(t, directory)
+
+	if err := Load(); err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	t.Setenv("ENV_QPASS_LATE_PROCESS", "runtime")
+	writeEnvFile(t, directory, fileEnv, "ENV_QPASS_LATE_PROCESS=file\n")
+	if err := Reload(); err != nil {
+		t.Fatalf("Reload with process value: %v", err)
+	}
+	if got := os.Getenv("ENV_QPASS_LATE_PROCESS"); got != "runtime" {
+		t.Fatalf("expected live process value, got %q", got)
+	}
+
+	writeEnvFile(t, directory, fileEnv, "")
+	if err := Reload(); err != nil {
+		t.Fatalf("Reload removing file value: %v", err)
+	}
+	if got := os.Getenv("ENV_QPASS_LATE_PROCESS"); got != "runtime" {
+		t.Fatalf("expected process value to remain untouched, got %q", got)
+	}
+}
+
 // TestReloadRefreshesFileOwnedAppEnv ensures a file-controlled APP_ENV can select a new layer transactionally.
 func TestReloadRefreshesFileOwnedAppEnv(t *testing.T) {
 	prepareLoaderTest(t, "ENV_QPASS_STAGE", "ENV_QPASS_PROD")
-	t.Setenv("APP_ENV", Local)
+	_ = os.Unsetenv("APP_ENV")
 	directory := t.TempDir()
 	writeEnvFile(t, directory, fileEnv, "APP_ENV=staging\n")
 	writeEnvFile(t, directory, envFileStaging, "ENV_QPASS_STAGE=yes\n")
@@ -469,16 +670,26 @@ func TestLoadReturnsDiscoveryAndParseErrorsWithoutMutation(t *testing.T) {
 
 // TestLoadRollsBackApplicationFailure ensures an application-layer failure restores every earlier mutation.
 func TestLoadRollsBackApplicationFailure(t *testing.T) {
-	prepareLoaderTest(t, "ENV_QPASS_A", "ENV_QPASS_B")
+	prepareLoaderTest(t, "ENV_QPASS_A", "ENV_QPASS_B", "ENV_QPASS_PROTECTED")
 	t.Setenv("APP_ENV", Local)
-	t.Setenv("ENV_QPASS_A", "ambient-a")
-	t.Setenv("ENV_QPASS_B", "ambient-b")
+	t.Setenv("ENV_QPASS_PROTECTED", "process")
+	_ = os.Unsetenv("ENV_QPASS_A")
+	_ = os.Unsetenv("ENV_QPASS_B")
 	directory := t.TempDir()
-	writeEnvFile(t, directory, fileEnv, "ENV_QPASS_A=file-a\nENV_QPASS_B=file-b\n")
+	writeEnvFile(
+		t,
+		directory,
+		fileEnv,
+		"ENV_QPASS_A=file-a\nENV_QPASS_B=file-b\nENV_QPASS_PROTECTED=file\n",
+	)
 	changeWorkingDirectory(t, directory)
 
 	failed := false
+	protectedWrites := 0
 	envSet = func(key, value string) error {
+		if key == "ENV_QPASS_PROTECTED" {
+			protectedWrites++
+		}
 		if key == "ENV_QPASS_B" && value == "file-b" && !failed {
 			failed = true
 			return errors.New("injected set failure")
@@ -488,8 +699,14 @@ func TestLoadRollsBackApplicationFailure(t *testing.T) {
 	if err := Load(); err == nil {
 		t.Fatal("expected application error")
 	}
-	if os.Getenv("ENV_QPASS_A") != "ambient-a" || os.Getenv("ENV_QPASS_B") != "ambient-b" {
-		t.Fatal("expected failed Load to roll back all affected keys")
+	if _, present := os.LookupEnv("ENV_QPASS_A"); present {
+		t.Fatal("expected failed Load to unset the first applied key")
+	}
+	if _, present := os.LookupEnv("ENV_QPASS_B"); present {
+		t.Fatal("expected failed Load to leave the rejected key unset")
+	}
+	if got := os.Getenv("ENV_QPASS_PROTECTED"); got != "process" || protectedWrites != 0 {
+		t.Fatalf("expected protected process value to remain untouched, got %q with %d writes", got, protectedWrites)
 	}
 	if IsEnvLoaded() {
 		t.Fatal("expected failed Load to leave state unpublished")
@@ -500,8 +717,8 @@ func TestLoadRollsBackApplicationFailure(t *testing.T) {
 func TestLoadJoinsApplicationAndRollbackFailures(t *testing.T) {
 	prepareLoaderTest(t, "ENV_QPASS_A", "ENV_QPASS_B")
 	t.Setenv("APP_ENV", Local)
-	t.Setenv("ENV_QPASS_A", "ambient-a")
-	t.Setenv("ENV_QPASS_B", "ambient-b")
+	_ = os.Unsetenv("ENV_QPASS_A")
+	_ = os.Unsetenv("ENV_QPASS_B")
 	directory := t.TempDir()
 	writeEnvFile(t, directory, fileEnv, "ENV_QPASS_A=file-a\nENV_QPASS_B=file-b\n")
 	changeWorkingDirectory(t, directory)
@@ -509,15 +726,16 @@ func TestLoadJoinsApplicationAndRollbackFailures(t *testing.T) {
 	applyErr := errors.New("injected apply failure")
 	rollbackErr := errors.New("injected rollback failure")
 	envSet = func(key, value string) error {
-		if key == "ENV_QPASS_B" {
-			switch value {
-			case "file-b":
-				return applyErr
-			case "ambient-b":
-				return rollbackErr
-			}
+		if key == "ENV_QPASS_B" && value == "file-b" {
+			return applyErr
 		}
 		return os.Setenv(key, value)
+	}
+	envUnset = func(key string) error {
+		if key == "ENV_QPASS_A" {
+			return rollbackErr
+		}
+		return os.Unsetenv(key)
 	}
 
 	err := Load()

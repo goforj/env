@@ -16,9 +16,10 @@ import (
 func main() {
 	// Load loads the nearest env files with deterministic layering.
 	//
-	// Load applies once per process. Files override ambient values, and later files override earlier
-	// files. Discovery and parsing complete before the process environment changes; errors leave both
-	// the environment and loader state unchanged. Use Reload to re-read files.
+	// Load applies once per process. Existing process values override files, and later files override
+	// earlier files for keys absent from the process environment. Discovery and parsing complete
+	// before the process environment changes; errors leave both the environment and loader state
+	// unchanged. Use Reload to re-read files.
 
 	// Example: test-specific env file
 	tmp, _ := os.MkdirTemp("", "envdoc")
