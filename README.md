@@ -1086,6 +1086,10 @@ env.Dump(
 ```
 <!-- api:embed:end -->
 
+## Development
+
+Use `make test` for the root module, `make vet` for static checks, and `make generate` to refresh generated documentation. The `examples` directory is a separate Go module and can be tested from that directory when changed.
+
 ## License
 
 MIT
