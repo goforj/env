@@ -199,7 +199,7 @@ func GetFloat(key, fallback string) float64 {
 // @group Typed getters
 // @behavior readonly
 //
-// Accepted values match strconv.ParseBool: 1, t, T, TRUE, true, True and their false forms.
+// Accepted values include strconv.ParseBool values plus yes/no and on/off. Parsing ignores surrounding whitespace and letter case.
 // Invalid entries fall back.
 //
 // Example: numeric truthy
@@ -218,16 +218,29 @@ func GetFloat(key, fallback string) float64 {
 func GetBool(key, fallback string) bool {
 	val := os.Getenv(key)
 	if val != "" {
-		if ret, err := strconv.ParseBool(val); err == nil {
+		if ret, err := parseBool(val); err == nil {
 			return ret
 		}
 	}
 	if fallback != "" {
-		if ret, err := strconv.ParseBool(fallback); err == nil {
+		if ret, err := parseBool(fallback); err == nil {
 			return ret
 		}
 	}
 	return false
+}
+
+// parseBool extends Go's boolean vocabulary with common environment configuration forms.
+func parseBool(value string) (bool, error) {
+	value = strings.TrimSpace(value)
+	switch strings.ToLower(value) {
+	case "yes", "on":
+		return true, nil
+	case "no", "off":
+		return false, nil
+	default:
+		return strconv.ParseBool(value)
+	}
 }
 
 // GetDuration parses a Go duration string (e.g. "5s", "10m", "1h").
@@ -501,7 +514,7 @@ func MustGetInt(key string) int {
 //	_ = env.MustGetBool("FEATURE_ENABLED") // panics when parsing
 func MustGetBool(key string) bool {
 	value := MustGet(key)
-	parsed, err := strconv.ParseBool(value)
+	parsed, err := parseBool(value)
 	if err != nil {
 		panic("env variable is not a bool: " + key)
 	}
