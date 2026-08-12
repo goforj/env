@@ -101,11 +101,52 @@ func TestGetFloat(t *testing.T) {
 	})
 }
 
-// TestGetBool ensures standard boolean spellings map predictably.
+// TestGetBool ensures standard and environment-friendly boolean spellings map predictably.
 func TestGetBool(t *testing.T) {
-	withEnv("DEBUG", "true", func() {
-		if !GetBool("DEBUG", "false") {
-			t.Fatalf("expected true")
+	tests := []struct {
+		name  string
+		value string
+		want  bool
+	}{
+		{name: "true", value: "true", want: true},
+		{name: "one", value: "1", want: true},
+		{name: "yes", value: "yes", want: true},
+		{name: "uppercase on", value: " ON ", want: true},
+		{name: "false", value: "false"},
+		{name: "zero", value: "0"},
+		{name: "no", value: "no"},
+		{name: "uppercase off", value: " OFF "},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			withEnv("DEBUG", test.value, func() {
+				if got := GetBool("DEBUG", "false"); got != test.want {
+					t.Fatalf("GetBool(DEBUG, false) = %t, want %t", got, test.want)
+				}
+			})
+		})
+	}
+}
+
+// TestGetBoolParsesExtendedFallback verifies absent and invalid values use the same expanded fallback vocabulary.
+func TestGetBoolParsesExtendedFallback(t *testing.T) {
+	withEnv("DEBUG", "invalid", func() {
+		if !GetBool("DEBUG", "yes") {
+			t.Fatal("expected yes fallback to enable the value")
+		}
+	})
+}
+
+// TestMustGetBoolAcceptsExtendedValues keeps required booleans consistent with optional getters.
+func TestMustGetBoolAcceptsExtendedValues(t *testing.T) {
+	withEnv("FEATURE_ENABLED", "on", func() {
+		if !MustGetBool("FEATURE_ENABLED") {
+			t.Fatal("expected on to enable the required value")
+		}
+	})
+	withEnv("FEATURE_ENABLED", "no", func() {
+		if MustGetBool("FEATURE_ENABLED") {
+			t.Fatal("expected no to disable the required value")
 		}
 	})
 }
