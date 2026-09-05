@@ -9,4 +9,4 @@ require (
 	github.com/joho/godotenv v1.5.1 // indirect
 )
 
-replace github.com/goforj/env/v2 => ..
+replace github.com/goforj/env/v2 => ./..
