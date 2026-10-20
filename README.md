@@ -1093,3 +1093,7 @@ Use `make test` for the root module, `make vet` for static checks, and `make gen
 ## License
 
 MIT
+
+## Documentation
+
+Read the [env library documentation](https://goforj.dev/env) for standalone installation, usage, and API reference.
